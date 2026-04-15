@@ -1,0 +1,284 @@
+/* LeadSheet Floating Action Button */
+#leadsheet-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #1a1a2e;
+  color: #e0e0ff;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: serif;
+}
+
+#leadsheet-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  background: #2a2a4e;
+}
+
+/* LeadSheet Reader Overlay */
+#leadsheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483646;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---- Reader Container ---- */
+.ls-reader {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+  color: #1a1a1a;
+}
+
+.ls-reader.ls-dark {
+  background: #1a1a2e;
+  color: #e0e0e8;
+}
+
+/* ---- Toolbar ---- */
+.ls-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ls-dark .ls-toolbar {
+  background: #16162a;
+  border-bottom-color: #2a2a4e;
+}
+
+.ls-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ls-toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ls-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ls-song-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.ls-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.ls-artist {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.ls-meta {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* ---- Buttons ---- */
+.ls-btn {
+  background: #f0f0f0;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.1s;
+  line-height: 1.4;
+  font-family: inherit;
+}
+
+.ls-btn:hover {
+  background: #e0e0e0;
+}
+
+.ls-dark .ls-btn {
+  background: #2a2a4e;
+  border-color: #3a3a6e;
+}
+
+.ls-dark .ls-btn:hover {
+  background: #3a3a6e;
+}
+
+.ls-btn.ls-active {
+  background: #4a4ae0;
+  color: #fff;
+  border-color: #4a4ae0;
+}
+
+.ls-dark .ls-btn.ls-active {
+  background: #6a6aff;
+  border-color: #6a6aff;
+  color: #fff;
+}
+
+.ls-close {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 4px 8px;
+}
+
+.ls-control-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ls-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.5;
+  margin-right: 4px;
+}
+
+.ls-value {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Content Area ---- */
+.ls-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 32px;
+  scroll-behavior: auto;
+}
+
+/* ---- Multi-Column Layout ---- */
+.ls-columns {
+  column-gap: 48px;
+  column-rule: 1px solid #e0e0e0;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  line-height: 1.5;
+}
+
+.ls-dark .ls-columns {
+  column-rule-color: #2a2a4e;
+}
+
+/* ---- Song Lines ---- */
+.ls-line {
+  display: flex;
+  flex-direction: column;
+  break-inside: avoid;
+  white-space: pre;
+}
+
+.ls-chords {
+  color: #2563eb;
+  font-weight: 700;
+  white-space: pre;
+  user-select: all;
+}
+
+.ls-dark .ls-chords {
+  color: #818cf8;
+}
+
+.ls-lyrics {
+  white-space: pre;
+}
+
+.ls-section-header {
+  font-weight: 800;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 1.2em;
+  margin-bottom: 0.3em;
+  color: #6b7280;
+  break-after: avoid;
+}
+
+.ls-dark .ls-section-header {
+  color: #9ca3af;
+}
+
+.ls-empty-line {
+  height: 0.8em;
+}
+
+.ls-lyric-line {
+  white-space: pre;
+}
+
+/* ---- Scrollbar ---- */
+.ls-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ls-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ls-content::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.ls-dark .ls-content::-webkit-scrollbar-thumb {
+  background: #3a3a6e;
+}
+
+/* ---- Print ---- */
+@media print {
+  .ls-toolbar {
+    display: none !important;
+  }
+  .ls-content {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .ls-reader {
+    background: white !important;
+    color: black !important;
+  }
+  .ls-chords {
+    color: black !important;
+    font-weight: bold !important;
+  }
+}

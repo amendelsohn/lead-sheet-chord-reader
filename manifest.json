@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "LeadSheet Chord Reader",
+  "version": "0.1.0",
+  "description": "Clean, distraction-free chord reader for Ultimate Guitar and E-Chords. Auto-activates on chord pages.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://tabs.ultimate-guitar.com/tab/*",
+        "*://www.ultimate-guitar.com/tab/*",
+        "*://www.e-chords.com/chords/*/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage"],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "LeadSheet Chord Reader"
+  }
+}

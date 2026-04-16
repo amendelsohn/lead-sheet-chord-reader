@@ -4,9 +4,14 @@ import { enrichFromLines } from './enrich';
 /**
  * Ultimate Guitar parser.
  *
- * UG renders chords as <span data-name="Am7" class="eSJpP ...">Am7</span>
- * inside a <pre>. Section headers like [Intro] are plain-text lines.
+ * UG renders chords as chord spans inside a <pre>. Section headers like [Intro]
+ * are plain-text lines. Two DOM variants exist in the wild:
+ *   - Desktop: <span data-name="Am7" class="eSJpP ...">Am7</span>
+ *   - Mobile:  <span class="tabContent-chord js-chord-chord" data-original-chord="Am7">Am7</span>
+ * Both are handled via the combined selector below.
  */
+const CHORD_SELECTOR = 'span[data-name], span[data-original-chord]';
+
 export const ultimateGuitarParser: SiteParser = {
   id: 'ultimate-guitar',
   label: 'Ultimate Guitar',
@@ -16,17 +21,21 @@ export const ultimateGuitarParser: SiteParser = {
     return /\/tab\/.+chords/i.test(url.pathname);
   },
   hasChordContent() {
-    return document.querySelector('span[data-name]') !== null;
+    return document.querySelector(CHORD_SELECTOR) !== null;
   },
   parse: parseUltimateGuitar,
 };
+
+function getChordName(el: Element): string | null {
+  return el.getAttribute('data-name') || el.getAttribute('data-original-chord');
+}
 
 function parseUltimateGuitar(): ParsedSong | null {
   // Find the chord content container — look for a pre that contains chord spans
   const preEls = document.querySelectorAll('pre');
   let preEl: Element | null = null;
   for (const candidate of preEls) {
-    if (candidate.querySelector('span[data-name]')) {
+    if (candidate.querySelector(CHORD_SELECTOR)) {
       preEl = candidate;
       break;
     }
@@ -34,7 +43,7 @@ function parseUltimateGuitar(): ParsedSong | null {
   if (!preEl) return null;
 
   // Check for chord spans to confirm this is a chord page
-  const chordSpans = preEl.querySelectorAll('span[data-name]');
+  const chordSpans = preEl.querySelectorAll(CHORD_SELECTOR);
   if (chordSpans.length === 0) return null;
 
   // Extract title and artist
@@ -139,7 +148,7 @@ function parseContent(preEl: Element): SongLine[] {
       continue;
     }
 
-    if (/data-name="[^"]+"/.test(htmlLine)) {
+    if (/data-(name|original-chord)="[^"]+"/.test(htmlLine)) {
       lines.push({
         type: 'chord-line',
         chords: extractChordPositions(htmlLine),
@@ -180,7 +189,7 @@ function extractChordPositions(htmlLine: string): ChordPosition[] {
       textPos += (node.textContent || '').length;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
-      const chordName = el.getAttribute('data-name');
+      const chordName = getChordName(el);
       if (chordName) {
         let fullChord = chordName;
         // If the next sibling text starts with '*', treat it as an alt-fingering marker

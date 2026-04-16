@@ -6,13 +6,18 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
+    "build:firefox": "tsc --noEmit && node build.mjs --target=firefox",
+    "build:all": "npm run build && npm run build:firefox",
     "dev": "node build.mjs --watch",
+    "dev:firefox": "node build.mjs --watch --target=firefox",
+    "android:run": "web-ext run -t firefox-android --firefox-apk=org.mozilla.fenix --source-dir=./dist-firefox",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist dist-firefox"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",
     "esbuild": "^0.25.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "web-ext": "^8.0.0"
   }
 }

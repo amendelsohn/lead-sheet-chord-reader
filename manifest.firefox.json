@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "LeadSheet Chord Reader",
+  "version": "0.1.0",
+  "description": "Clean, distraction-free reader for chord sheets. Transpose, auto-scroll, dark mode, and print-friendly layout.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://tabs.ultimate-guitar.com/tab/*",
+        "*://www.e-chords.com/chords/*/*",
+        "*://*.cifraclub.com/*",
+        "*://*.cifraclub.com.br/*",
+        "*://*.azchords.com/*",
+        "*://*.ukutabs.com/*",
+        "*://*.chordie.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage"],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "LeadSheet Chord Reader"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "leadsheet@leadsheet.app",
+      "strict_min_version": "115.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "120.0"
+    }
+  }
+}

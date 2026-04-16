@@ -19,6 +19,7 @@ import {
 } from './scroll';
 import { attachKeyboard, detachKeyboard } from './keyboard';
 import { html, render } from '../shared/html';
+import { applyTheme } from './themes';
 
 export { ReaderOptions } from './state';
 
@@ -90,8 +91,8 @@ function applyState(): void {
     transposeVal.textContent = text;
   }
 
-  // Dark mode, layout, font size, scroll toggle state, etc.
-  reader.classList.toggle('ls-dark', state.darkMode);
+  // Theme, layout, font size, scroll toggle state, etc.
+  applyTheme(reader, state.theme);
   reader.classList.toggle('ls-layout-vertical', state.layout === 'vertical');
   reader.classList.toggle('ls-layout-horizontal', state.layout === 'horizontal');
 

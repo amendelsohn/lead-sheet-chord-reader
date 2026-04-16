@@ -166,9 +166,10 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
     savePreferences();
   });
 
-  // Theme — either half toggles
+  // Theme — either half toggles between the two legacy light/dark presets.
+  // (Replaced by the full theme picker in a follow-up step.)
   const toggleTheme = () => {
-    state.darkMode = !state.darkMode;
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
     onChange();
     savePreferences();
   };
@@ -273,8 +274,8 @@ export function syncToolbarToState(): void {
   }
 
   // Theme toggle active state
-  getEl('ls-theme-light')?.classList.toggle('ls-active', !state.darkMode);
-  getEl('ls-theme-dark')?.classList.toggle('ls-active', state.darkMode);
+  getEl('ls-theme-light')?.classList.toggle('ls-active', state.theme === 'light');
+  getEl('ls-theme-dark')?.classList.toggle('ls-active', state.theme === 'dark');
 
   // Display-mode active state
   getEl('ls-display-letter')?.classList.toggle('ls-active', state.chordDisplay === 'letter');

@@ -11,11 +11,23 @@ interface ReaderState {
   autoScrollSpeed: number;
   autoScrollActive: boolean;
   scrollAnimationId: number | null;
+  onClose?: () => void;
 }
 
 let state: ReaderState;
 
-export function createReaderView(song: ParsedSong) {
+export interface ReaderOptions {
+  onClose?: () => void;
+}
+
+export function isReaderOpen(): boolean {
+  return document.getElementById('leadsheet-overlay') !== null;
+}
+
+export function createReaderView(song: ParsedSong, options: ReaderOptions = {}) {
+  // Don't create duplicate reader if one is already open
+  if (isReaderOpen()) return;
+
   state = {
     song,
     transposeSemitones: 0,
@@ -26,6 +38,7 @@ export function createReaderView(song: ParsedSong) {
     autoScrollSpeed: 0.5,
     autoScrollActive: false,
     scrollAnimationId: null,
+    onClose: options.onClose,
   };
 
   // Load saved preferences
@@ -386,15 +399,10 @@ function closeReader() {
   if (overlay) overlay.remove();
   document.body.style.overflow = '';
 
-  // Re-inject FAB
-  const fab = document.createElement('button');
-  fab.id = 'leadsheet-fab';
-  fab.innerHTML = '♪';
-  fab.title = 'Open LeadSheet Reader';
-  fab.addEventListener('click', () => {
-    createReaderView(state.song);
-  });
-  document.body.appendChild(fab);
+  // Let the caller (main.ts) handle what happens after close
+  if (state.onClose) {
+    state.onClose();
+  }
 }
 
 function escapeHtml(text: string): string {

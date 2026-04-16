@@ -11,8 +11,15 @@ import { ParsedSong, SongLine, ChordPosition } from './types';
  * Section headers like [Intro], [Verse 1] are plain text lines wrapped in brackets.
  */
 export function parseUltimateGuitar(): ParsedSong | null {
-  // Find the chord content container
-  const preEl = document.querySelector('pre[class]');
+  // Find the chord content container — look for a pre that contains chord spans
+  const preEls = document.querySelectorAll('pre');
+  let preEl: Element | null = null;
+  for (const candidate of preEls) {
+    if (candidate.querySelector('span[data-name]')) {
+      preEl = candidate;
+      break;
+    }
+  }
   if (!preEl) return null;
 
   // Check for chord spans to confirm this is a chord page

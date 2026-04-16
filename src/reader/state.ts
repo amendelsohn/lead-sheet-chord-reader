@@ -22,7 +22,11 @@ export interface ReaderOptions {
 
 let current: ReaderState | null = null;
 
-export function initState(song: ParsedSong, options: ReaderOptions = {}): ReaderState {
+export function initState(
+  song: ParsedSong,
+  options: ReaderOptions = {},
+  onAsyncPrefsApplied?: () => void
+): ReaderState {
   current = {
     song,
     transposeSemitones: 0,
@@ -35,7 +39,11 @@ export function initState(song: ParsedSong, options: ReaderOptions = {}): Reader
     scrollAnimationId: null,
     onClose: options.onClose,
   };
-  loadPreferences(current);
+  // Prefs are usually cached by the time a reader opens (preloadPrefs runs
+  // from main.ts at content-script init). If not — e.g. right after the
+  // extension is freshly (re)loaded on an already-open page — the async
+  // path fires the callback so the caller can re-render with the real prefs.
+  loadPreferences(current, onAsyncPrefsApplied);
   return current;
 }
 

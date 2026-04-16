@@ -39,7 +39,11 @@ export function forceCloseReader(): void {
 export function createReaderView(song: ParsedSong, options: ReaderOptions = {}): void {
   if (isReaderOpen()) return;
 
-  initState(song, options);
+  // If prefs arrive async (cache wasn't warm yet), re-render so the toolbar
+  // and overlay reflect the loaded values instead of the default state.
+  initState(song, options, () => {
+    if (isReaderOpen()) applyState();
+  });
 
   const root = getShadowRoot();
   const overlay = document.createElement('div');

@@ -87,12 +87,21 @@ function handleReaderClose() {
   injectFAB();
 }
 
+// Inline SVG so we don't need web_accessible_resources for an icon asset.
+// Matches the extension's action icon (pick + LS) without the outer background
+// rect, since the FAB already provides its own background.
+const FAB_ICON_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-hidden="true" focusable="false">
+  <path d="M 64 16 Q 108 16 108 54 Q 108 86 64 114 Q 20 86 20 54 Q 20 16 64 16 Z" fill="#a8a5ff"/>
+  <text x="64" y="72" text-anchor="middle" font-family="URW Gothic, Inter, -apple-system, sans-serif" font-weight="700" font-size="52" fill="#1a1838">LS</text>
+</svg>`;
+
 function injectFAB() {
   const root = getShadowRoot();
   if (root.getElementById('leadsheet-fab')) return;
   const fab = document.createElement('button');
   fab.id = 'leadsheet-fab';
-  fab.innerHTML = '♪';
+  fab.innerHTML = FAB_ICON_SVG;
   fab.title = 'Open LeadSheet Reader';
   fab.addEventListener('click', () => {
     // Clear dismissal and open

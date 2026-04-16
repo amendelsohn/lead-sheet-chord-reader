@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#1a1838"/>
+  <!-- Solid lavender pick -->
+  <path d="M 64 16 Q 108 16 108 54 Q 108 86 64 114 Q 20 86 20 54 Q 20 16 64 16 Z" fill="#a8a5ff"/>
+  <!-- Dark LS cutout -->
+  <text x="64" y="72" text-anchor="middle" font-family="URW Gothic" font-weight="700" font-size="52" fill="#1a1838">LS</text>
+</svg>

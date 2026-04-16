@@ -8,18 +8,22 @@
   border-radius: 50%;
   border: none;
   background: #1a1a2e;
-  color: #e0e0ff;
-  font-size: 24px;
+  padding: 0;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: serif;
   /* Host element is pointer-events: none (see shadow.ts) so the host page
      remains interactive — re-enable here for our own interactive elements. */
   pointer-events: auto;
+}
+
+#leadsheet-fab svg {
+  width: 34px;
+  height: 34px;
+  display: block;
 }
 
 #leadsheet-fab:hover {

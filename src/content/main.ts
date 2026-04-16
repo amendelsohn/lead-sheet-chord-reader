@@ -2,6 +2,7 @@ import { parseUltimateGuitar } from './parsers/ug';
 import { parseEChords } from './parsers/echords';
 import { ParsedSong } from './parsers/types';
 import { createReaderView, isReaderOpen } from '../reader/reader';
+import { preloadPrefs } from '../shared/storage';
 
 /**
  * LeadSheet content script entry point.
@@ -184,6 +185,10 @@ function init() {
   if (!site) return;
 
   console.log(`[LeadSheet] Content script loaded on ${site}`);
+
+  // Start fetching saved prefs from chrome.storage immediately. By the time
+  // the user actually opens the reader, the cache is almost always populated.
+  preloadPrefs().catch(() => {});
 
   watchUrlChanges();
   startObserver();

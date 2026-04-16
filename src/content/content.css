@@ -54,6 +54,7 @@
 
 /* ---- Toolbar ---- */
 .ls-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -62,7 +63,8 @@
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: visible;
 }
 
 .ls-dark .ls-toolbar {
@@ -75,13 +77,17 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .ls-toolbar-center {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 28px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .ls-toolbar-right {
@@ -89,6 +95,7 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .ls-song-info {
@@ -108,8 +115,56 @@
 }
 
 .ls-meta {
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  line-height: 1.3;
   opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+  padding-left: 4px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.ls-meta:empty {
+  display: none;
+}
+
+.ls-dark .ls-meta {
+  border-left-color: #2a2e36;
+}
+
+/* ---- Overflow Panel (Hamburger Dropdown) ---- */
+.ls-overflow-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 12px;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.ls-overflow-panel.ls-open {
+  display: flex;
+}
+
+.ls-overflow-panel .ls-control-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ls-dark .ls-overflow-panel {
+  background: #1a1d23;
+  border-color: #3a3f48;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
 }
 
 /* ---- Buttons ---- */
@@ -133,6 +188,50 @@
 .ls-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/*
+ * Button group: adjacent buttons that share a vertical edge (segmented-control
+ * style). Border-radius is squared on the inner edges, and the right button's
+ * left border is collapsed onto the left button's right border via -1px
+ * margin so the group reads as a single unit.
+ */
+.ls-btn-group,
+.ls-control-row.ls-btn-group {
+  gap: 0;
+}
+
+.ls-btn-group > .ls-btn {
+  border-radius: 0;
+  margin-left: -1px;
+  position: relative;
+}
+
+.ls-btn-group > .ls-btn:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+
+.ls-btn-group > .ls-btn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+/* Active button overlaps its sibling's border so both of its edges show */
+.ls-btn-group > .ls-btn.ls-active {
+  z-index: 1;
+}
+
+/*
+ * Toggle-style group: the whole group acts as a single toggle.
+ * Hovering anywhere in the group previews the swap by highlighting the
+ * *inactive* half — as if saying "click to land here".
+ */
+.ls-btn-group:hover > .ls-btn:not(.ls-active) {
+  background: #e0e0e0;
+}
+
+.ls-dark .ls-btn-group:hover > .ls-btn:not(.ls-active) {
+  background: #3a3f48;
 }
 
 .ls-btn:disabled:hover {
@@ -170,18 +269,30 @@
   padding: 4px 8px;
 }
 
+/*
+ * Control groups stack label-above-controls. The group sizes to its
+ * button row (via align-items: center), and the label centers above it.
+ */
 .ls-control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.ls-control-row {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .ls-label {
-  font-size: 11px;
+  font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   opacity: 0.5;
-  margin-right: 4px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .ls-value {
@@ -190,6 +301,15 @@
   min-width: 24px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Transpose display shows "+N (Key)" — widen the value slot so the toolbar
+ * doesn't jitter as the user steps through semitones. Sized for the widest
+ * expected string "-11 (F#m)" or similar.
+ */
+#ls-transpose-value {
+  min-width: 4em;
 }
 
 /* ---- Content Area ---- */

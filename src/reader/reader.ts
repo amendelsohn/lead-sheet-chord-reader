@@ -1,6 +1,7 @@
 import { ParsedSong, SongLine } from '../content/parsers/types';
 import { transposeChord } from '../shared/transpose';
 import { isChordOnlyLine, detectChordsInText } from '../shared/chord-detect';
+import { getCachedPrefs, preloadPrefs, savePrefs, Prefs } from '../shared/storage';
 
 type LayoutMode = 'vertical' | 'horizontal';
 
@@ -34,7 +35,7 @@ export function createReaderView(song: ParsedSong, options: ReaderOptions = {}) 
   state = {
     song,
     transposeSemitones: 0,
-    useFlats: false,
+    useFlats: true,
     layout: 'vertical' as LayoutMode,
     fontSize: 14,
     darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
@@ -62,8 +63,12 @@ export function createReaderView(song: ParsedSong, options: ReaderOptions = {}) 
   // Prevent body scroll
   document.body.style.overflow = 'hidden';
 
-  // Recompute column separators on viewport resize (flex tracks reflow)
+  // Recompute column separators and toolbar overflow on viewport resize
   window.addEventListener('resize', scheduleSeparatorUpdate);
+  window.addEventListener('resize', scheduleToolbarUpdate);
+
+  // Initial toolbar layout measurement happens after first paint
+  requestAnimationFrame(() => updateToolbarOverflow());
 }
 
 let separatorRaf: number | null = null;
@@ -73,6 +78,68 @@ function scheduleSeparatorUpdate() {
     separatorRaf = null;
     updateColumnSeparators();
   });
+}
+
+let toolbarRaf: number | null = null;
+function scheduleToolbarUpdate() {
+  if (toolbarRaf !== null) return;
+  toolbarRaf = requestAnimationFrame(() => {
+    toolbarRaf = null;
+    updateToolbarOverflow();
+  });
+}
+
+/**
+ * Keep the toolbar on one line. When controls don't fit, move the lowest-
+ * priority control-group into the overflow panel (hamburger dropdown).
+ * When there's room again, pull groups back in priority order.
+ *
+ * data-priority on each group: higher = keep longer. Lowest is first to go.
+ */
+function updateToolbarOverflow() {
+  const controls = document.getElementById('ls-toolbar-controls');
+  const panel = document.getElementById('ls-overflow-panel');
+  const toggle = document.getElementById('ls-overflow-toggle');
+  if (!controls || !panel || !toggle) return;
+
+  // Return all groups to the toolbar in their display order (priority
+  // ascending — lowest on the left). When overflow occurs we drop the
+  // RIGHTMOST group into the panel first — this matches reading flow
+  // (text wraps from the right, not the left).
+  const allGroups = [
+    ...Array.from(controls.querySelectorAll<HTMLElement>('.ls-control-group')),
+    ...Array.from(panel.querySelectorAll<HTMLElement>('.ls-control-group')),
+  ];
+  allGroups.sort((a, b) => getPriority(a) - getPriority(b));
+  for (const g of allGroups) controls.appendChild(g);
+
+  // Demote the rightmost group until the toolbar fits. Prepending to the
+  // panel keeps panel order consistent with toolbar display order.
+  while (controls.scrollWidth > controls.clientWidth + 1) {
+    const inToolbar = Array.from(
+      controls.querySelectorAll<HTMLElement>('.ls-control-group')
+    );
+    if (inToolbar.length === 0) break;
+    const victim = inToolbar[inToolbar.length - 1];
+    panel.prepend(victim);
+  }
+
+  toggle.style.display = panel.children.length > 0 ? '' : 'none';
+
+  // If the panel is empty, also close it (tidy up state)
+  if (panel.children.length === 0) {
+    panel.classList.remove('ls-open');
+    toggle.classList.remove('ls-active');
+  }
+}
+
+function getPriority(el: HTMLElement): number {
+  return parseInt(el.dataset.priority || '0', 10);
+}
+
+function isStandardTuning(tuning: string): boolean {
+  // Normalize — UG writes "E A D G B E", others may omit spaces
+  return tuning.replace(/\s+/g, '').toUpperCase() === 'EADGBE';
 }
 
 function buildReaderHTML(): string {
@@ -85,37 +152,53 @@ function buildReaderHTML(): string {
             <span class="ls-title" id="ls-title"></span>
             <span class="ls-artist" id="ls-artist"></span>
           </div>
+          <div class="ls-meta" id="ls-meta"></div>
         </div>
-        <div class="ls-toolbar-center">
-          <div class="ls-control-group">
-            <span class="ls-label">Transpose</span>
-            <button class="ls-btn" id="ls-transpose-down" title="Transpose down">−</button>
-            <span class="ls-value" id="ls-transpose-value">0</span>
-            <button class="ls-btn" id="ls-transpose-up" title="Transpose up">+</button>
-            <button class="ls-btn ls-toggle" id="ls-flats-toggle" title="Toggle sharps/flats">♭</button>
-          </div>
-          <div class="ls-control-group">
-            <span class="ls-label">Font</span>
-            <button class="ls-btn" id="ls-font-down" title="Decrease font size">A−</button>
-            <button class="ls-btn" id="ls-font-up" title="Increase font size">A+</button>
-          </div>
-          <div class="ls-control-group">
+        <div class="ls-toolbar-center" id="ls-toolbar-controls">
+          <div class="ls-control-group" data-priority="1">
             <span class="ls-label">Layout</span>
-            <button class="ls-btn" id="ls-layout-vertical" title="Vertical — one column, scroll down (v)">↕ Vertical</button>
-            <button class="ls-btn" id="ls-layout-horizontal" title="Horizontal — page view, scroll across (h)">↔ Pages</button>
+            <div class="ls-control-row ls-btn-group">
+              <button class="ls-btn" id="ls-layout-vertical" title="Vertical — one column, scroll down (v)">↕ Vertical</button>
+              <button class="ls-btn" id="ls-layout-horizontal" title="Horizontal — page view, scroll across (h)">↔ Pages</button>
+            </div>
           </div>
-          <div class="ls-control-group">
+          <div class="ls-control-group" data-priority="2">
+            <span class="ls-label">Font</span>
+            <div class="ls-control-row">
+              <button class="ls-btn" id="ls-font-down" title="Decrease font size">A−</button>
+              <button class="ls-btn" id="ls-font-up" title="Increase font size">A+</button>
+            </div>
+          </div>
+          <div class="ls-control-group" data-priority="3">
             <span class="ls-label">Scroll</span>
-            <button class="ls-btn ls-toggle" id="ls-scroll-toggle" title="Auto-scroll">▶</button>
-            <button class="ls-btn" id="ls-scroll-slower" title="Slower">−</button>
-            <span class="ls-value" id="ls-scroll-speed">0.5</span>
-            <button class="ls-btn" id="ls-scroll-faster" title="Faster">+</button>
+            <div class="ls-control-row">
+              <button class="ls-btn ls-toggle" id="ls-scroll-toggle" title="Auto-scroll">▶</button>
+              <button class="ls-btn" id="ls-scroll-slower" title="Slower">−</button>
+              <span class="ls-value" id="ls-scroll-speed">0.5</span>
+              <button class="ls-btn" id="ls-scroll-faster" title="Faster">+</button>
+            </div>
+          </div>
+          <div class="ls-control-group" data-priority="4">
+            <span class="ls-label">Transpose</span>
+            <div class="ls-control-row">
+              <button class="ls-btn" id="ls-transpose-down" title="Transpose down">−</button>
+              <span class="ls-value" id="ls-transpose-value">0</span>
+              <button class="ls-btn" id="ls-transpose-up" title="Transpose up">+</button>
+            </div>
+          </div>
+          <div class="ls-control-group" data-priority="5">
+            <span class="ls-label">Accidentals</span>
+            <div class="ls-control-row ls-btn-group">
+              <button class="ls-btn" id="ls-accidental-sharp" title="Use sharps (C#, F#, ...)">♯</button>
+              <button class="ls-btn" id="ls-accidental-flat" title="Use flats (Db, Gb, ...)">♭</button>
+            </div>
           </div>
         </div>
         <div class="ls-toolbar-right">
-          <div class="ls-meta" id="ls-meta"></div>
           <button class="ls-btn ls-toggle" id="ls-dark-toggle" title="Toggle dark mode">◐</button>
+          <button class="ls-btn" id="ls-overflow-toggle" title="More controls" aria-label="More controls" style="display: none;">☰</button>
         </div>
+        <div class="ls-overflow-panel" id="ls-overflow-panel"></div>
       </header>
       <main class="ls-content" id="ls-content">
         <div class="ls-columns" id="ls-columns"></div>
@@ -137,16 +220,26 @@ function applyState() {
   titleEl.textContent = state.song.title;
   artistEl.textContent = state.song.artist;
 
-  // Metadata
-  const metaParts: string[] = [];
-  if (state.song.key) metaParts.push(`Key: ${state.song.key}`);
-  if (state.song.capo) metaParts.push(`Capo: ${state.song.capo}`);
-  if (state.song.tuning) metaParts.push(`Tuning: ${state.song.tuning}`);
-  metaEl.textContent = metaParts.join(' · ');
+  // Metadata — stacked vertically, one line per field.
+  // Hide defaults: capo 0 = no capo, standard EADGBE tuning is implicit.
+  const metaLines: string[] = [];
+  if (state.song.key) metaLines.push(`Key: ${escapeHtml(state.song.key)}`);
+  if (state.song.capo && state.song.capo > 0) {
+    metaLines.push(`Capo: ${state.song.capo}`);
+  }
+  if (state.song.tuning && !isStandardTuning(state.song.tuning)) {
+    metaLines.push(`Tuning: ${escapeHtml(state.song.tuning)}`);
+  }
+  metaEl.innerHTML = metaLines.map(l => `<div>${l}</div>`).join('');
 
-  // Transpose value
+  // Transpose value — number, plus transposed key in parens when we have one
   const sign = state.transposeSemitones > 0 ? '+' : '';
-  transposeVal.textContent = sign + state.transposeSemitones;
+  let transposeText = sign + state.transposeSemitones;
+  if (state.song.key) {
+    const newKey = transposeChord(state.song.key, state.transposeSemitones, state.useFlats);
+    transposeText += ` (${newKey})`;
+  }
+  transposeVal.textContent = transposeText;
 
   // Scroll speed
   scrollSpeed.textContent = state.autoScrollSpeed.toFixed(1);
@@ -169,8 +262,9 @@ function applyState() {
   document.getElementById('ls-layout-vertical')?.classList.toggle('ls-active', state.layout === 'vertical');
   document.getElementById('ls-layout-horizontal')?.classList.toggle('ls-active', state.layout === 'horizontal');
 
-  const flatsToggle = document.getElementById('ls-flats-toggle')!;
-  flatsToggle.classList.toggle('ls-active', state.useFlats);
+  // Accidental buttons: highlight whichever matches the current mode
+  document.getElementById('ls-accidental-sharp')?.classList.toggle('ls-active', !state.useFlats);
+  document.getElementById('ls-accidental-flat')?.classList.toggle('ls-active', state.useFlats);
 
   const scrollToggle = document.getElementById('ls-scroll-toggle')!;
   scrollToggle.classList.toggle('ls-active', state.autoScrollActive);
@@ -317,12 +411,40 @@ function renderChordLine(line: { chords: { chord: string; position: number }[]; 
   const chordStr = chordChars.join('').trimEnd();
   const lyricsStr = effectiveLyrics;
 
-  if (lyricsStr.trim() === '' || lyricsStr.trim() === chordStr.trim()) {
-    // Chord-only line (no distinct lyrics underneath)
+  // Chord-only line: the raw lyrics consist entirely of chord tokens and
+  // whitespace. Render just the transposed chord line. (Can't compare
+  // chordStr to lyricsStr directly — when we transpose or flip accidentals,
+  // the transposed names will legitimately differ from the raw text.)
+  if (lyricsStr.trim() === '' || isEntirelyCoveredByChords(lyricsStr, effectiveChords)) {
     return `<div class="ls-line"><span class="ls-chords">${escapeHtml(chordStr)}</span></div>`;
   }
 
   return `<div class="ls-line"><span class="ls-chords">${escapeHtml(chordStr)}</span><span class="ls-lyrics">${escapeHtml(lyricsStr)}</span></div>`;
+}
+
+/**
+ * Returns true if every non-whitespace character in `text` falls within the
+ * bounds of one of the given chord tokens (using each chord's ORIGINAL name
+ * at its recorded position). Used to detect chord-only lines — where the
+ * plain text is just chord names separated by spaces — so we don't render a
+ * stale "lyrics" line below the transposed chord line.
+ */
+function isEntirelyCoveredByChords(
+  text: string,
+  chords: { chord: string; position: number }[]
+): boolean {
+  if (chords.length === 0) return false;
+  const covered = new Array(text.length).fill(false);
+  for (const cp of chords) {
+    for (let i = 0; i < cp.chord.length; i++) {
+      const idx = cp.position + i;
+      if (idx >= 0 && idx < text.length) covered[idx] = true;
+    }
+  }
+  for (let i = 0; i < text.length; i++) {
+    if (!/\s/.test(text[i]) && !covered[i]) return false;
+  }
+  return true;
 }
 
 function getMaxChordEnd(chords: { chord: string; position: number }[]): number {
@@ -340,26 +462,26 @@ function bindEvents() {
     if (e.key === 'Escape') closeReader();
   });
 
-  // Transpose
+  // Transpose — range -11..+11, wrap to 0 past the extremes
   document.getElementById('ls-transpose-down')!.addEventListener('click', () => {
-    state.transposeSemitones = ((state.transposeSemitones - 1) % 12 + 12) % 12;
-    if (state.transposeSemitones > 6) state.transposeSemitones -= 12;
+    state.transposeSemitones = transposeStep(state.transposeSemitones, -1);
     applyState();
     savePreferences();
   });
   document.getElementById('ls-transpose-up')!.addEventListener('click', () => {
-    state.transposeSemitones = ((state.transposeSemitones + 1) % 12 + 12) % 12;
-    if (state.transposeSemitones > 6) state.transposeSemitones -= 12;
+    state.transposeSemitones = transposeStep(state.transposeSemitones, 1);
     applyState();
     savePreferences();
   });
 
-  // Flats toggle
-  document.getElementById('ls-flats-toggle')!.addEventListener('click', () => {
+  // Accidentals (sharps / flats) — either half toggles the state
+  const toggleAccidentals = () => {
     state.useFlats = !state.useFlats;
     applyState();
     savePreferences();
-  });
+  };
+  document.getElementById('ls-accidental-sharp')!.addEventListener('click', toggleAccidentals);
+  document.getElementById('ls-accidental-flat')!.addEventListener('click', toggleAccidentals);
 
   // Font size
   document.getElementById('ls-font-down')!.addEventListener('click', () => {
@@ -373,17 +495,14 @@ function bindEvents() {
     savePreferences();
   });
 
-  // Layout
-  document.getElementById('ls-layout-vertical')!.addEventListener('click', () => {
-    state.layout = 'vertical';
+  // Layout — either half toggles the state
+  const toggleLayout = () => {
+    state.layout = state.layout === 'vertical' ? 'horizontal' : 'vertical';
     applyState();
     savePreferences();
-  });
-  document.getElementById('ls-layout-horizontal')!.addEventListener('click', () => {
-    state.layout = 'horizontal';
-    applyState();
-    savePreferences();
-  });
+  };
+  document.getElementById('ls-layout-vertical')!.addEventListener('click', toggleLayout);
+  document.getElementById('ls-layout-horizontal')!.addEventListener('click', toggleLayout);
 
   // Auto-scroll
   document.getElementById('ls-scroll-toggle')!.addEventListener('click', () => {
@@ -413,6 +532,22 @@ function bindEvents() {
     savePreferences();
   });
 
+  // Overflow menu (hamburger)
+  const overflowToggle = document.getElementById('ls-overflow-toggle')!;
+  const overflowPanel = document.getElementById('ls-overflow-panel')!;
+  overflowToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = overflowPanel.classList.toggle('ls-open');
+    overflowToggle.classList.toggle('ls-active', open);
+  });
+  document.addEventListener('click', (e) => {
+    if (!overflowPanel.classList.contains('ls-open')) return;
+    if (overflowPanel.contains(e.target as Node)) return;
+    if (overflowToggle.contains(e.target as Node)) return;
+    overflowPanel.classList.remove('ls-open');
+    overflowToggle.classList.remove('ls-active');
+  });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -422,15 +557,15 @@ function bindEvents() {
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
-        state.transposeSemitones = ((state.transposeSemitones + 1) % 12 + 12) % 12;
-        if (state.transposeSemitones > 6) state.transposeSemitones -= 12;
+        state.transposeSemitones = transposeStep(state.transposeSemitones, 1);
         applyState();
+        savePreferences();
         break;
       case 'ArrowDown':
         e.preventDefault();
-        state.transposeSemitones = ((state.transposeSemitones - 1) % 12 + 12) % 12;
-        if (state.transposeSemitones > 6) state.transposeSemitones -= 12;
+        state.transposeSemitones = transposeStep(state.transposeSemitones, -1);
         applyState();
+        savePreferences();
         break;
       case '+':
       case '=':
@@ -496,6 +631,18 @@ function nextSpeedUp(current: number): number {
 
 function nextSpeedDown(current: number): number {
   return Math.max(SCROLL_MIN, +(current - SCROLL_STEP).toFixed(1));
+}
+
+/**
+ * Step transpose semitones by delta, with the range -11..+11.
+ * Past the extremes, wrap to 0 (not to the opposite end) — so the user sees
+ * "no transpose" between each 11-step lap through the keys.
+ */
+function transposeStep(current: number, delta: 1 | -1): number {
+  const next = current + delta;
+  if (next > 11) return 0;
+  if (next < -11) return 0;
+  return next;
 }
 
 function pageScroll(direction: 1 | -1) {
@@ -573,32 +720,34 @@ function escapeHtml(text: string): string {
 }
 
 function savePreferences() {
-  const prefs = {
+  savePrefs({
     fontSize: state.fontSize,
     layout: state.layout,
     darkMode: state.darkMode,
     useFlats: state.useFlats,
     autoScrollSpeed: state.autoScrollSpeed,
-  };
-  try {
-    localStorage.setItem('leadsheet-prefs', JSON.stringify(prefs));
-  } catch {
-    // localStorage might not be available
-  }
+  });
+}
+
+function applyPrefs(prefs: Prefs) {
+  if (prefs.fontSize) state.fontSize = prefs.fontSize;
+  if (prefs.layout === 'vertical' || prefs.layout === 'horizontal') state.layout = prefs.layout;
+  if (prefs.darkMode !== undefined) state.darkMode = prefs.darkMode;
+  if (prefs.useFlats !== undefined) state.useFlats = prefs.useFlats;
+  if (prefs.autoScrollSpeed) state.autoScrollSpeed = prefs.autoScrollSpeed;
 }
 
 function loadPreferences() {
-  try {
-    const saved = localStorage.getItem('leadsheet-prefs');
-    if (saved) {
-      const prefs = JSON.parse(saved);
-      if (prefs.fontSize) state.fontSize = prefs.fontSize;
-      if (prefs.layout === 'vertical' || prefs.layout === 'horizontal') state.layout = prefs.layout;
-      if (prefs.darkMode !== undefined) state.darkMode = prefs.darkMode;
-      if (prefs.useFlats !== undefined) state.useFlats = prefs.useFlats;
-      if (prefs.autoScrollSpeed) state.autoScrollSpeed = prefs.autoScrollSpeed;
-    }
-  } catch {
-    // Ignore
+  // Preferred path: prefs are already cached from the content-script preload.
+  const cached = getCachedPrefs();
+  if (cached) {
+    applyPrefs(cached);
+    return;
   }
+  // Fallback: preload didn't finish yet (rare). Start defaults now, then
+  // re-apply + re-render once prefs arrive.
+  preloadPrefs().then((prefs) => {
+    applyPrefs(prefs);
+    applyState();
+  });
 }

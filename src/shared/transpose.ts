@@ -48,7 +48,8 @@ function transposeNote(note: string, semitones: number, useFlats: boolean): stri
  * Transpose a full chord string by the given number of semitones.
  */
 export function transposeChord(chord: string, semitones: number, useFlats: boolean): string {
-  if (semitones === 0) return chord;
+  // No early return on semitones === 0: we still need to normalize
+  // accidentals (# ↔ ♭) to match the current useFlats preference.
   const parsed = parseChord(chord);
   if (!parsed) return chord;
 

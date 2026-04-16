@@ -2,11 +2,13 @@ import { ParsedSong, SongLine } from '../content/parsers/types';
 import { transposeChord } from '../shared/transpose';
 import { isChordOnlyLine, detectChordsInText } from '../shared/chord-detect';
 
+type LayoutMode = 'vertical' | 'horizontal';
+
 interface ReaderState {
   song: ParsedSong;
   transposeSemitones: number;
   useFlats: boolean;
-  columns: number;
+  layout: LayoutMode;
   fontSize: number;
   darkMode: boolean;
   autoScrollSpeed: number;
@@ -33,7 +35,7 @@ export function createReaderView(song: ParsedSong, options: ReaderOptions = {}) 
     song,
     transposeSemitones: 0,
     useFlats: false,
-    columns: 2,
+    layout: 'vertical' as LayoutMode,
     fontSize: 14,
     darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
     autoScrollSpeed: 0.5,
@@ -59,6 +61,18 @@ export function createReaderView(song: ParsedSong, options: ReaderOptions = {}) 
 
   // Prevent body scroll
   document.body.style.overflow = 'hidden';
+
+  // Recompute column separators on viewport resize (flex tracks reflow)
+  window.addEventListener('resize', scheduleSeparatorUpdate);
+}
+
+let separatorRaf: number | null = null;
+function scheduleSeparatorUpdate() {
+  if (separatorRaf !== null) return;
+  separatorRaf = requestAnimationFrame(() => {
+    separatorRaf = null;
+    updateColumnSeparators();
+  });
 }
 
 function buildReaderHTML(): string {
@@ -86,10 +100,9 @@ function buildReaderHTML(): string {
             <button class="ls-btn" id="ls-font-up" title="Increase font size">A+</button>
           </div>
           <div class="ls-control-group">
-            <span class="ls-label">Columns</span>
-            <button class="ls-btn" id="ls-col-1" title="1 column">1</button>
-            <button class="ls-btn" id="ls-col-2" title="2 columns">2</button>
-            <button class="ls-btn" id="ls-col-3" title="3 columns">3</button>
+            <span class="ls-label">Layout</span>
+            <button class="ls-btn" id="ls-layout-vertical" title="Vertical — one column, scroll down (v)">↕ Vertical</button>
+            <button class="ls-btn" id="ls-layout-horizontal" title="Horizontal — page view, scroll across (h)">↔ Pages</button>
           </div>
           <div class="ls-control-group">
             <span class="ls-label">Scroll</span>
@@ -137,6 +150,10 @@ function applyState() {
 
   // Scroll speed
   scrollSpeed.textContent = state.autoScrollSpeed.toFixed(1);
+  const slowerBtn = document.getElementById('ls-scroll-slower') as HTMLButtonElement | null;
+  if (slowerBtn) slowerBtn.disabled = state.autoScrollSpeed <= 0.2;
+  const fasterBtn = document.getElementById('ls-scroll-faster') as HTMLButtonElement | null;
+  if (fasterBtn) fasterBtn.disabled = state.autoScrollSpeed >= 3.0;
 
   // Dark mode
   reader.classList.toggle('ls-dark', state.darkMode);
@@ -144,14 +161,13 @@ function applyState() {
   // Font size
   columnsEl.style.fontSize = state.fontSize + 'px';
 
-  // Columns
-  columnsEl.style.columnCount = String(state.columns);
+  // Layout mode — clear inline column-count left over from old behavior
+  columnsEl.style.columnCount = '';
+  reader.classList.toggle('ls-layout-vertical', state.layout === 'vertical');
+  reader.classList.toggle('ls-layout-horizontal', state.layout === 'horizontal');
 
-  // Active button states
-  document.querySelectorAll('#ls-col-1, #ls-col-2, #ls-col-3').forEach(btn => {
-    btn.classList.remove('ls-active');
-  });
-  document.getElementById(`ls-col-${state.columns}`)?.classList.add('ls-active');
+  document.getElementById('ls-layout-vertical')?.classList.toggle('ls-active', state.layout === 'vertical');
+  document.getElementById('ls-layout-horizontal')?.classList.toggle('ls-active', state.layout === 'horizontal');
 
   const flatsToggle = document.getElementById('ls-flats-toggle')!;
   flatsToggle.classList.toggle('ls-active', state.useFlats);
@@ -165,22 +181,99 @@ function applyState() {
 
   // Render song content
   renderSong(columnsEl);
+
+  // After content renders, draw column separators (horizontal mode only).
+  // rAF so measurement sees the post-layout positions.
+  requestAnimationFrame(() => updateColumnSeparators());
+}
+
+/**
+ * Flexbox has no native column-rule equivalent. We render separators as
+ * absolutely-positioned elements at x-positions measured from the DOM after
+ * layout. Each distinct left offset among flex items marks a column start;
+ * we draw a separator just before each column except the first.
+ */
+function updateColumnSeparators() {
+  const columnsEl = document.getElementById('ls-columns');
+  if (!columnsEl) return;
+
+  // Clear any previous separators
+  columnsEl.querySelectorAll('.ls-col-separator').forEach(el => el.remove());
+
+  if (state.layout !== 'horizontal') return;
+
+  const items = Array.from(columnsEl.children).filter(
+    el => !el.classList.contains('ls-col-separator')
+  ) as HTMLElement[];
+  if (items.length === 0) return;
+
+  // Collect each unique column's left offset (start of the track)
+  const columnLefts = new Set<number>();
+  for (const item of items) {
+    columnLefts.add(item.offsetLeft);
+  }
+
+  const sortedLefts = [...columnLefts].sort((a, b) => a - b);
+  // gap: 0 48px — separator sits 24px to the left of each column start
+  // (i.e., centered in the gap between this column and the previous one)
+  const GAP_HALF = 24;
+  for (let i = 1; i < sortedLefts.length; i++) {
+    const sep = document.createElement('div');
+    sep.className = 'ls-col-separator';
+    sep.style.left = (sortedLefts[i] - GAP_HALF) + 'px';
+    columnsEl.appendChild(sep);
+  }
 }
 
 function renderSong(container: HTMLElement) {
   const html: string[] = [];
+  const lines = state.song.lines;
 
-  for (const line of state.song.lines) {
-    switch (line.type) {
-      case 'section-header':
-        html.push(`<div class="ls-section-header">${escapeHtml(line.label)}</div>`);
-        break;
-      case 'empty':
-        html.push('<div class="ls-empty-line">&nbsp;</div>');
-        break;
-      case 'chord-line':
-        html.push(renderChordLine(line));
-        break;
+  /**
+   * In horizontal (page) mode, the flex column-wrap layout treats each direct
+   * child as an atomic unit — it can't split a child across columns. So we
+   * group each chord line with its following lyric line(s) into one wrapper
+   * div. That keeps chords visually attached to the words they belong to.
+   * (In vertical mode this grouping has no visible effect.)
+   */
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.type === 'section-header') {
+      html.push(`<div class="ls-section-header">${escapeHtml(line.label)}</div>`);
+      i++;
+      continue;
+    }
+
+    if (line.type === 'empty') {
+      html.push('<div class="ls-empty-line">&nbsp;</div>');
+      i++;
+      continue;
+    }
+
+    // chord-line: if it carries chords (explicit or detectable), start a group
+    // that also absorbs the immediately-following lyric-only chord-lines
+    const hasChords = line.chords.length > 0 || isChordOnlyLine(line.lyrics);
+    if (hasChords) {
+      const group: string[] = [renderChordLine(line)];
+      let j = i + 1;
+      while (j < lines.length) {
+        const next = lines[j];
+        if (next.type !== 'chord-line') break;
+        if (next.chords.length > 0 || isChordOnlyLine(next.lyrics)) break;
+        group.push(renderChordLine(next));
+        j++;
+      }
+      if (group.length > 1) {
+        html.push(`<div class="ls-group">${group.join('')}</div>`);
+      } else {
+        html.push(group[0]);
+      }
+      i = j;
+    } else {
+      html.push(renderChordLine(line));
+      i++;
     }
   }
 
@@ -280,19 +373,14 @@ function bindEvents() {
     savePreferences();
   });
 
-  // Columns
-  document.getElementById('ls-col-1')!.addEventListener('click', () => {
-    state.columns = 1;
+  // Layout
+  document.getElementById('ls-layout-vertical')!.addEventListener('click', () => {
+    state.layout = 'vertical';
     applyState();
     savePreferences();
   });
-  document.getElementById('ls-col-2')!.addEventListener('click', () => {
-    state.columns = 2;
-    applyState();
-    savePreferences();
-  });
-  document.getElementById('ls-col-3')!.addEventListener('click', () => {
-    state.columns = 3;
+  document.getElementById('ls-layout-horizontal')!.addEventListener('click', () => {
+    state.layout = 'horizontal';
     applyState();
     savePreferences();
   });
@@ -308,12 +396,12 @@ function bindEvents() {
     applyState();
   });
   document.getElementById('ls-scroll-slower')!.addEventListener('click', () => {
-    state.autoScrollSpeed = Math.max(0.1, +(state.autoScrollSpeed - 0.1).toFixed(1));
+    state.autoScrollSpeed = nextSpeedDown(state.autoScrollSpeed);
     applyState();
     savePreferences();
   });
   document.getElementById('ls-scroll-faster')!.addEventListener('click', () => {
-    state.autoScrollSpeed = Math.min(3.0, +(state.autoScrollSpeed + 0.1).toFixed(1));
+    state.autoScrollSpeed = nextSpeedUp(state.autoScrollSpeed);
     applyState();
     savePreferences();
   });
@@ -353,17 +441,15 @@ function bindEvents() {
         state.fontSize = Math.max(10, state.fontSize - 1);
         applyState();
         break;
-      case '1':
-        state.columns = 1;
+      case 'v':
+        state.layout = 'vertical';
         applyState();
+        savePreferences();
         break;
-      case '2':
-        state.columns = 2;
+      case 'h':
+        state.layout = 'horizontal';
         applyState();
-        break;
-      case '3':
-        state.columns = 3;
-        applyState();
+        savePreferences();
         break;
       case ' ':
         e.preventDefault();
@@ -380,15 +466,77 @@ function bindEvents() {
         state.useFlats = !state.useFlats;
         applyState();
         break;
+      case 'ArrowLeft':
+      case 'PageUp':
+        e.preventDefault();
+        pageScroll(-1);
+        break;
+      case 'ArrowRight':
+      case 'PageDown':
+        e.preventDefault();
+        pageScroll(1);
+        break;
     }
   });
 }
 
+/**
+ * Scroll by one "page" in the direction indicated (+1 forward, -1 back).
+ * Vertical mode: by viewport height minus overlap, so the reader sees a few
+ * lines of context from the previous page.
+ * Horizontal mode: by exactly one column width + gap (jump between pages).
+ */
+const SCROLL_STEP = 0.2;
+const SCROLL_MIN = 0.2;
+const SCROLL_MAX = 3.0;
+
+function nextSpeedUp(current: number): number {
+  return Math.min(SCROLL_MAX, +(current + SCROLL_STEP).toFixed(1));
+}
+
+function nextSpeedDown(current: number): number {
+  return Math.max(SCROLL_MIN, +(current - SCROLL_STEP).toFixed(1));
+}
+
+function pageScroll(direction: 1 | -1) {
+  const content = document.getElementById('ls-content');
+  if (!content) return;
+
+  if (state.layout === 'horizontal') {
+    // Measure actual column width from the first child of the flex container
+    const columnsEl = document.getElementById('ls-columns');
+    const firstChild = columnsEl?.firstElementChild as HTMLElement | null;
+    const colWidth = firstChild?.offsetWidth || 420;
+    const colGap = 48; // Matches the CSS `gap: 0 48px`
+    const step = colWidth + colGap;
+    content.scrollBy({ left: direction * step, behavior: 'smooth' });
+  } else {
+    // Vertical: one viewport height minus an overlap so the user keeps
+    // some context from the previous page
+    const overlap = Math.min(80, content.clientHeight * 0.15);
+    const step = content.clientHeight - overlap;
+    content.scrollBy({ top: direction * step, behavior: 'smooth' });
+  }
+}
+
 function startAutoScroll() {
   const content = document.getElementById('ls-content')!;
+  // Browsers round scrollTop/scrollLeft to integer pixels, so sub-1 speeds
+  // get truncated to 0 and never advance. Accumulate fractional delta between
+  // frames and apply whole-pixel steps when the accumulator crosses 1.
+  let accumulator = 0;
 
   function scroll() {
-    content.scrollTop += state.autoScrollSpeed;
+    accumulator += state.autoScrollSpeed;
+    const whole = Math.floor(accumulator);
+    if (whole > 0) {
+      if (state.layout === 'horizontal') {
+        content.scrollLeft += whole;
+      } else {
+        content.scrollTop += whole;
+      }
+      accumulator -= whole;
+    }
     if (state.autoScrollActive) {
       state.scrollAnimationId = requestAnimationFrame(scroll);
     }
@@ -406,6 +554,7 @@ function stopAutoScroll() {
 
 function closeReader() {
   stopAutoScroll();
+  window.removeEventListener('resize', scheduleSeparatorUpdate);
   const overlay = document.getElementById('leadsheet-overlay');
   if (overlay) overlay.remove();
   document.body.style.overflow = '';
@@ -426,7 +575,7 @@ function escapeHtml(text: string): string {
 function savePreferences() {
   const prefs = {
     fontSize: state.fontSize,
-    columns: state.columns,
+    layout: state.layout,
     darkMode: state.darkMode,
     useFlats: state.useFlats,
     autoScrollSpeed: state.autoScrollSpeed,
@@ -444,7 +593,7 @@ function loadPreferences() {
     if (saved) {
       const prefs = JSON.parse(saved);
       if (prefs.fontSize) state.fontSize = prefs.fontSize;
-      if (prefs.columns) state.columns = prefs.columns;
+      if (prefs.layout === 'vertical' || prefs.layout === 'horizontal') state.layout = prefs.layout;
       if (prefs.darkMode !== undefined) state.darkMode = prefs.darkMode;
       if (prefs.useFlats !== undefined) state.useFlats = prefs.useFlats;
       if (prefs.autoScrollSpeed) state.autoScrollSpeed = prefs.autoScrollSpeed;

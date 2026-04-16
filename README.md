@@ -19,8 +19,10 @@ A Chrome extension that auto-activates on chord sites (Ultimate Guitar, E-Chords
 |-----|--------|
 | `Esc` | Close reader |
 | `↑` / `↓` | Transpose up/down |
+| `←` / `→` / `PgUp` / `PgDn` | Page scroll (vertical: scroll by screen height with overlap; horizontal: one column) |
 | `+` / `-` | Font size up/down |
-| `1` / `2` / `3` | Set column count |
+| `v` | Vertical layout (single column, scroll down) |
+| `h` | Horizontal layout (page view, scroll across) |
 | `Space` | Toggle auto-scroll |
 | `d` | Toggle dark mode |
 | `b` | Toggle flats/sharps |

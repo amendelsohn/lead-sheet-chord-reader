@@ -130,6 +130,19 @@
   background: #e0e0e0;
 }
 
+.ls-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ls-btn:disabled:hover {
+  background: #f0f0f0;
+}
+
+.ls-dark .ls-btn:disabled:hover {
+  background: #2a2e36;
+}
+
 .ls-dark .ls-btn {
   background: #2a2e36;
   border-color: #3a3f48;
@@ -182,23 +195,93 @@
 /* ---- Content Area ---- */
 .ls-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 24px 32px;
   scroll-behavior: auto;
+  min-height: 0; /* Allow flex child to shrink and contain overflow */
 }
 
-/* ---- Multi-Column Layout ---- */
+.ls-layout-vertical .ls-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/*
+ * Horizontal (page) mode: content fills top-to-bottom within one column,
+ * then overflows into the next column to the right. User scrolls horizontally
+ * to read more.
+ */
+.ls-layout-horizontal .ls-content {
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+
+/* ---- Layout ---- */
 .ls-columns {
-  column-gap: 48px;
-  column-rule: 1px solid #e0e0e0;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
   font-variant-ligatures: none;
   line-height: 1.5;
 }
 
-.ls-dark .ls-columns {
-  column-rule-color: #2a2e36;
+.ls-layout-vertical .ls-columns {
+  /* Plain block layout — single column scrolling down */
+}
+
+/*
+ * Horizontal layout uses flex column-wrap rather than CSS multicol.
+ * Multicol with a constrained height clips overflow rather than creating
+ * more columns to the right, which defeats the whole point of a page view.
+ * Flex column-wrap, on the other hand, naturally grows the container
+ * horizontally as items wrap into new columns.
+ */
+.ls-layout-horizontal .ls-columns {
+  position: relative;
+  display: flex;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  height: 100%;
+  gap: 0 48px;
+  padding-right: 24px; /* Breathing room after last column */
+}
+
+/*
+ * Each direct child of .ls-columns spans one column. The column has a
+ * minimum width but grows (max-content) to fit any line longer than the
+ * minimum, so content is never clipped.
+ *
+ * padding-right is breathing room inside the column, border-right draws
+ * the rule, margin-right is space after the rule. Items in the same column
+ * may have different widths — the border sits at each item's right edge —
+ * but content-flow-wise that's fine because items in the same column are
+ * vertically stacked and rarely share visual alignment anyway.
+ *
+ * Groups (chord-line + lyric-line pairs) are atomic units — the flex layout
+ * can't split them across columns, so chords stay with their lyrics.
+ */
+.ls-layout-horizontal .ls-columns > *:not(.ls-col-separator) {
+  /* No explicit width — flexbox sizes each wrap-track's cross-axis to its
+     widest item and stretches siblings in the track to match (align-items:
+     stretch is the default). min-width gives a readable column floor. */
+  min-width: var(--ls-column-width, 420px);
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+
+/*
+ * Column separators: one vertical rule per column boundary, absolutely
+ * positioned inside the flex container by post-layout JS measurement.
+ * They sit in the middle of the flex gap so they don't affect layout.
+ */
+.ls-col-separator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e0e0e0;
+  pointer-events: none;
+}
+
+.ls-dark .ls-col-separator {
+  background: #2a2e36;
 }
 
 /* ---- Song Lines ---- */

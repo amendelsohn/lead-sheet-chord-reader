@@ -80,7 +80,7 @@ export function buildToolbarHTML(): HtmlString {
             <select class="ls-select" id="ls-key-select" title="Key used for scale-degree display"></select>
           </div>
         </div>
-        <div class="ls-control-group" data-priority="6">
+        <div class="ls-control-group" data-priority="9">
           <span class="ls-label">Theme</span>
           <div class="ls-control-row ls-btn-group">
             <button class="ls-btn" id="ls-theme-light" title="Light theme">☀</button>

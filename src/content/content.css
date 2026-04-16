@@ -387,7 +387,11 @@
 
 .ls-layout-vertical .ls-content {
   overflow-y: auto;
-  overflow-x: hidden;
+  /* Long chord/lyric lines must not wrap — chord names are positioned above
+     specific lyric characters via monospace alignment, so wrapping would
+     break the pairing. Allow horizontal scroll when a line is wider than
+     the viewport (common on mobile). */
+  overflow-x: auto;
 }
 
 /*
@@ -481,7 +485,6 @@
   color: #3a5a8c;
   font-weight: 700;
   white-space: pre;
-  user-select: all;
 }
 
 .ls-dark .ls-chords {

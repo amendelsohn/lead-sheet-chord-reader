@@ -1,10 +1,12 @@
 # LeadSheet Chord Reader
 
-A Chrome extension that auto-activates on chord sites (Ultimate Guitar, E-Chords, Cifra Club) and renders a clean, distraction-free chord sheet.
+A Chrome extension that renders chord sheets in a clean, distraction-free reading layout. Parses the existing page content client-side — no scraping, no network calls.
+
+Currently compatible with Ultimate Guitar®, E-Chords, and Cifra Club (trademarks of their respective owners; this project is not affiliated with or endorsed by any of them).
 
 ## Features
 
-- **Auto-activates** on Ultimate Guitar, E-Chords, and Cifra Club chord pages
+- **Auto-activates** on supported chord sheet pages
 - **Two layouts:** *Vertical* (one column, scroll down) or *Pages* (fills each column top-to-bottom, scroll right to reveal more columns)
 - **Transpose** up/down across a -11..+11 range, with the current key shown next to the number
 - **Sharps / flats** segmented toggle — flips accidental display even at transpose 0

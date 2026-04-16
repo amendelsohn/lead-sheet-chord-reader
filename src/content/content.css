@@ -412,6 +412,38 @@
   min-width: 4em;
 }
 
+/*
+ * Theme picker row: the swatch sits left of the select. The swatch is a
+ * fixed-size chip split into three equal horizontal bands (bg / fg / accent)
+ * so the user recognizes the active theme at a glance.
+ */
+.ls-theme-row {
+  gap: 6px;
+}
+
+.ls-theme-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--ls-btn-border);
+  flex-shrink: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      var(--ls-swatch-bg, #fafafa) 0 33.33%,
+      var(--ls-swatch-fg, #1a1a1a) 33.33% 66.66%,
+      var(--ls-swatch-accent, #3a5a8c) 66.66% 100%
+    );
+}
+
+@media (pointer: coarse) {
+  .ls-theme-swatch {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 /* ---- Content Area ---- */
 .ls-content {
   flex: 1;

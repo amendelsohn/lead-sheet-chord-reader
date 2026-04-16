@@ -11,6 +11,7 @@ import {
 } from './scroll';
 import { html, HtmlString } from '../shared/html';
 import { Key, Mode } from '../shared/key-infer';
+import { THEMES, ThemeId, isThemeId, themeSwatch } from './themes';
 
 /**
  * Toolbar: HTML template, event bindings, and responsive overflow menu.
@@ -82,9 +83,9 @@ export function buildToolbarHTML(): HtmlString {
         </div>
         <div class="ls-control-group" data-priority="9">
           <span class="ls-label">Theme</span>
-          <div class="ls-control-row ls-btn-group">
-            <button class="ls-btn" id="ls-theme-light" title="Light theme">☀</button>
-            <button class="ls-btn" id="ls-theme-dark" title="Dark theme">☾</button>
+          <div class="ls-control-row ls-theme-row">
+            <span class="ls-theme-swatch" id="ls-theme-swatch" aria-hidden="true"></span>
+            <select class="ls-select" id="ls-theme-select" title="Color theme"></select>
           </div>
         </div>
       </div>
@@ -166,15 +167,18 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
     savePreferences();
   });
 
-  // Theme — either half toggles between the two legacy light/dark presets.
-  // (Replaced by the full theme picker in a follow-up step.)
-  const toggleTheme = () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    onChange();
-    savePreferences();
-  };
-  getEl('ls-theme-light')!.addEventListener('click', toggleTheme);
-  getEl('ls-theme-dark')!.addEventListener('click', toggleTheme);
+  // Theme picker
+  populateThemeSelect();
+  const themeSelect = getEl<HTMLSelectElement>('ls-theme-select');
+  themeSelect?.addEventListener('change', () => {
+    const value = themeSelect.value;
+    if (isThemeId(value)) {
+      state.theme = value;
+      onChange();
+      savePreferences();
+    }
+  });
+  attachSystemThemeListener(onChange);
 
   // Display mode (letter / roman / nashville)
   const setDisplay = (mode: ChordDisplay) => {
@@ -229,6 +233,71 @@ export function unbindToolbarEvents(): void {
     document.removeEventListener('click', outsideClickHandler);
     outsideClickHandler = null;
   }
+  detachSystemThemeListener();
+}
+
+/* ---- Theme picker helpers ---- */
+
+function populateThemeSelect(): void {
+  const sel = getEl<HTMLSelectElement>('ls-theme-select');
+  if (!sel) return;
+  sel.replaceChildren();
+  for (const theme of THEMES) {
+    const opt = document.createElement('option');
+    opt.value = theme.id;
+    opt.textContent = theme.label;
+    sel.appendChild(opt);
+  }
+}
+
+/**
+ * Paint the three-stripe swatch (bg / fg / accent) next to the picker so the
+ * active theme reads at a glance. Swatch updates whenever the active theme
+ * changes — including 'system' resolving to dark/light at runtime.
+ */
+function syncThemeSwatch(id: ThemeId): void {
+  const swatch = getEl('ls-theme-swatch');
+  if (!swatch) return;
+  const { bg, fg, accent } = themeSwatch(id);
+  swatch.style.setProperty('--ls-swatch-bg', bg);
+  swatch.style.setProperty('--ls-swatch-fg', fg);
+  swatch.style.setProperty('--ls-swatch-accent', accent);
+}
+
+let systemThemeMql: MediaQueryList | null = null;
+let systemThemeHandler: ((e: MediaQueryListEvent) => void) | null = null;
+
+/**
+ * Listen for OS-level prefers-color-scheme changes and re-apply state when
+ * the user's current pick is 'system'. Idempotent — safe to call every
+ * bindToolbarEvents.
+ */
+function attachSystemThemeListener(onChange: () => void): void {
+  if (systemThemeMql || typeof window.matchMedia !== 'function') return;
+  systemThemeMql = window.matchMedia('(prefers-color-scheme: dark)');
+  systemThemeHandler = () => {
+    const state = getState();
+    if (state.theme === 'system') onChange();
+  };
+  // addEventListener is the modern API; older Safari uses addListener.
+  // Both are shipped in every browser our content script targets but the
+  // narrow fallback costs nothing.
+  if (systemThemeMql.addEventListener) {
+    systemThemeMql.addEventListener('change', systemThemeHandler);
+  } else {
+    (systemThemeMql as MediaQueryList).addListener(systemThemeHandler);
+  }
+}
+
+function detachSystemThemeListener(): void {
+  if (!systemThemeMql || !systemThemeHandler) return;
+  if (systemThemeMql.removeEventListener) {
+    systemThemeMql.removeEventListener('change', systemThemeHandler);
+  } else {
+    (systemThemeMql as MediaQueryList).removeListener(systemThemeHandler);
+  }
+  systemThemeMql = null;
+  systemThemeHandler = null;
 }
 
 /**
@@ -273,9 +342,10 @@ export function syncToolbarToState(): void {
     scrollToggle.textContent = state.autoScrollActive ? '⏸' : '▶';
   }
 
-  // Theme toggle active state
-  getEl('ls-theme-light')?.classList.toggle('ls-active', state.theme === 'light');
-  getEl('ls-theme-dark')?.classList.toggle('ls-active', state.theme === 'dark');
+  // Theme picker reflects current state
+  const themeSelect = getEl<HTMLSelectElement>('ls-theme-select');
+  if (themeSelect && themeSelect.value !== state.theme) themeSelect.value = state.theme;
+  syncThemeSwatch(state.theme);
 
   // Display-mode active state
   getEl('ls-display-letter')?.classList.toggle('ls-active', state.chordDisplay === 'letter');

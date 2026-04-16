@@ -1,40 +1,62 @@
-import { ParsedSong, SongLine, ChordPosition } from './types';
+import { ParsedSong, SongLine, ChordPosition, SiteParser } from './types';
+import { enrichFromLines } from './enrich';
 
 /**
- * Parse E-Chords chord page from the rendered DOM.
+ * E-Chords parser.
  *
- * E-Chords renders chords as:
- *   <span data-chord="F">F</span>
- * inside <pre class="pre-columns"> elements.
- *
- * Section headers use <strong> tags: <strong>[Intro]</strong>
+ * Chords are <span data-chord="F">F</span> inside a <pre>. Some songs wrap
+ * them in <pre class="pre-columns-N">; others use a plain <pre>.
+ * Section headers live in <strong> tags.
  */
-export function parseEChords(): ParsedSong | null {
-  // Find chord content containers
-  const preEls = document.querySelectorAll('pre.pre-columns');
-  if (preEls.length === 0) return null;
+export const eChordsParser: SiteParser = {
+  id: 'e-chords',
+  label: 'E-Chords',
+  hostnames: ['e-chords.com'],
+  matchesUrl(url) {
+    // Chord pages look like /chords/artist/song
+    return /^\/chords\/.+\/.+/i.test(url.pathname);
+  },
+  hasChordContent() {
+    return document.querySelector('span[data-chord]') !== null;
+  },
+  parse: parseEChords,
+};
 
-  // Check for chord spans
-  const chordSpans = document.querySelectorAll('pre.pre-columns span[data-chord]');
-  if (chordSpans.length === 0) return null;
+function parseEChords(): ParsedSong | null {
+  // Some songs use <pre class="pre-columns-N">, others use a bare <pre>.
+  // Select any <pre> that actually contains chord spans — that's the
+  // reliable signal regardless of class name.
+  const chordPres = Array.from(document.querySelectorAll('pre')).filter((p) =>
+    p.querySelector('span[data-chord]')
+  );
+  if (chordPres.length === 0) return null;
 
   const title = extractTitle();
   const artist = extractArtist();
 
   const lines: SongLine[] = [];
 
-  for (const preEl of preEls) {
+  for (const preEl of chordPres) {
     const parsed = parsePreElement(preEl);
     lines.push(...parsed);
   }
 
-  return {
+  return enrichFromLines({
     title,
     artist,
-    source: 'e-chords',
+    source: eChordsParser.id,
     sourceUrl: window.location.href,
+    key: extractKey(),
     lines,
-  };
+  });
+}
+
+function extractKey(): string | undefined {
+  // E-Chords renders the key inside a "key-changer" button:
+  //   <button class="btn btn-icon key-changer">Key: <span class="key">G</span>...</button>
+  const keyEl = document.querySelector('.key-changer .key');
+  const key = keyEl?.textContent?.trim();
+  return key || undefined;
 }
 
 function extractTitle(): string {

@@ -1,5 +1,4 @@
-import { parseUltimateGuitar } from './parsers/ug';
-import { parseEChords } from './parsers/echords';
+import { getParserForCurrentSite, SiteParser } from './parsers';
 import { ParsedSong } from './parsers/types';
 import { createReaderView, isReaderOpen } from '../reader/reader';
 import { getShadowRoot } from '../reader/shadow';
@@ -18,42 +17,19 @@ import { preloadPrefs } from '../shared/storage';
 
 let lastProcessedUrl: string | null = null;
 let observer: MutationObserver | null = null;
-
-function detectSite(): 'ultimate-guitar' | 'e-chords' | null {
-  const hostname = window.location.hostname;
-  if (hostname.includes('ultimate-guitar.com')) return 'ultimate-guitar';
-  if (hostname.includes('e-chords.com')) return 'e-chords';
-  return null;
-}
+let activeParser: SiteParser | null = null;
 
 function isChordPageUrl(): boolean {
-  const site = detectSite();
-  const path = window.location.pathname;
-
-  if (site === 'ultimate-guitar') {
-    // Chord pages look like /tab/artist/song-chords-12345
-    return /\/tab\/.+chords/i.test(path);
-  }
-  if (site === 'e-chords') {
-    // E-Chords pages look like /chords/artist/song
-    return /^\/chords\/.+\/.+/i.test(path);
-  }
-  return false;
+  if (!activeParser) return false;
+  return activeParser.matchesUrl(new URL(window.location.href));
 }
 
 function tryParse(): ParsedSong | null {
-  const site = detectSite();
-  if (site === 'ultimate-guitar') return parseUltimateGuitar();
-  if (site === 'e-chords') return parseEChords();
-  return null;
+  return activeParser ? activeParser.parse() : null;
 }
 
 function hasChordContent(): boolean {
-  // Cheap check for chord markers in the DOM
-  return (
-    document.querySelector('span[data-name]') !== null ||
-    document.querySelector('span[data-chord]') !== null
-  );
+  return activeParser ? activeParser.hasChordContent() : false;
 }
 
 function processPage() {
@@ -183,10 +159,10 @@ function watchUrlChanges() {
 }
 
 function init() {
-  const site = detectSite();
-  if (!site) return;
+  activeParser = getParserForCurrentSite();
+  if (!activeParser) return;
 
-  console.log(`[LeadSheet] Content script loaded on ${site}`);
+  console.log(`[LeadSheet] Content script loaded on ${activeParser.label}`);
 
   // Start fetching saved prefs from chrome.storage immediately. By the time
   // the user actually opens the reader, the cache is almost always populated.

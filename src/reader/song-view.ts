@@ -81,8 +81,17 @@ function renderChordLine(line: {
     return html`<div class="ls-lyric-line">${line.lyrics}</div>`;
   }
 
-  // Build the chord line by placing each transposed chord at its character
-  // offset. Lyrics are preserved with exact whitespace so alignment holds.
+  // If the chord spans sit inside a prose sentence (text around them is not
+  // just whitespace), render them inline rather than as a chord-line-over-
+  // lyric-line stack. This is the "the E7 chord" case: UG wraps the chord
+  // name in a span, but it's really just a reference inside a sentence.
+  if (hasInlineChordText(effectiveLyrics, effectiveChords)) {
+    return renderInlineChordLine(effectiveLyrics, effectiveChords);
+  }
+
+  // Traditional chord-over-lyric rendering. Build the chord line by placing
+  // each transposed chord at its character offset. Lyrics below preserve
+  // exact whitespace so alignment holds.
   const chordChars: string[] = new Array(
     Math.max(effectiveLyrics.length, maxChordEnd(effectiveChords))
   ).fill(' ');
@@ -112,6 +121,61 @@ function renderChordLine(line: {
   }
 
   return html`<div class="ls-line"><span class="ls-chords">${chordStr}</span><span class="ls-lyrics">${effectiveLyrics}</span></div>`;
+}
+
+/**
+ * Render a prose line with chord spans embedded in it. Walks the text in
+ * order, emitting plain-text runs and styled chord spans. The chord text
+ * itself is replaced by the transposed/accidental-flipped name.
+ */
+function renderInlineChordLine(
+  text: string,
+  chords: { chord: string; position: number }[]
+): HtmlString {
+  const state = getState();
+  const sorted = [...chords].sort((a, b) => a.position - b.position);
+  const parts: HtmlString[] = [];
+  let cursor = 0;
+
+  for (const cp of sorted) {
+    if (cp.position > cursor) {
+      parts.push(html`${text.substring(cursor, cp.position)}`);
+    }
+    const transposed = transposeChord(
+      cp.chord,
+      state.transposeSemitones,
+      state.useFlats
+    );
+    parts.push(html`<span class="ls-chords">${transposed}</span>`);
+    cursor = cp.position + cp.chord.length;
+  }
+  if (cursor < text.length) {
+    parts.push(html`${text.substring(cursor)}`);
+  }
+
+  return html`<div class="ls-lyric-line">${parts}</div>`;
+}
+
+/**
+ * True if the text has substantive (non-whitespace) content *outside* the
+ * chord span ranges. Indicates prose with inline chord references like
+ * "switches between the E chord and the E7 chord".
+ */
+function hasInlineChordText(
+  text: string,
+  chords: { chord: string; position: number }[]
+): boolean {
+  const covered = new Array(text.length).fill(false);
+  for (const cp of chords) {
+    for (let i = 0; i < cp.chord.length; i++) {
+      const idx = cp.position + i;
+      if (idx >= 0 && idx < text.length) covered[idx] = true;
+    }
+  }
+  for (let i = 0; i < text.length; i++) {
+    if (!covered[i] && !/\s/.test(text[i])) return true;
+  }
+  return false;
 }
 
 /**

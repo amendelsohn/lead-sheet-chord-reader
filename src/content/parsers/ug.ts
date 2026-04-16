@@ -1,16 +1,27 @@
-import { ParsedSong, SongLine, ChordPosition } from './types';
+import { ParsedSong, SongLine, ChordPosition, SiteParser } from './types';
+import { enrichFromLines } from './enrich';
 
 /**
- * Parse Ultimate Guitar chord page from the rendered DOM.
+ * Ultimate Guitar parser.
  *
- * UG renders chords as:
- *   <span data-name="Am7" class="eSJpP ...">Am7</span>
- * inside a <pre> within a <section> or <code> element.
- *
- * Lines alternate between chord lines (containing spans) and lyric lines (plain text).
- * Section headers like [Intro], [Verse 1] are plain text lines wrapped in brackets.
+ * UG renders chords as <span data-name="Am7" class="eSJpP ...">Am7</span>
+ * inside a <pre>. Section headers like [Intro] are plain-text lines.
  */
-export function parseUltimateGuitar(): ParsedSong | null {
+export const ultimateGuitarParser: SiteParser = {
+  id: 'ultimate-guitar',
+  label: 'Ultimate Guitar',
+  hostnames: ['ultimate-guitar.com'],
+  matchesUrl(url) {
+    // Chord pages look like /tab/artist/song-chords-12345
+    return /\/tab\/.+chords/i.test(url.pathname);
+  },
+  hasChordContent() {
+    return document.querySelector('span[data-name]') !== null;
+  },
+  parse: parseUltimateGuitar,
+};
+
+function parseUltimateGuitar(): ParsedSong | null {
   // Find the chord content container — look for a pre that contains chord spans
   const preEls = document.querySelectorAll('pre');
   let preEl: Element | null = null;
@@ -34,16 +45,16 @@ export function parseUltimateGuitar(): ParsedSong | null {
   // Parse the content line by line
   const lines = parseContent(preEl);
 
-  return {
+  return enrichFromLines({
     title,
     artist,
-    source: 'ultimate-guitar',
+    source: ultimateGuitarParser.id,
     sourceUrl: window.location.href,
     key,
     capo,
     tuning,
     lines,
-  };
+  });
 }
 
 function extractTitle(): string {

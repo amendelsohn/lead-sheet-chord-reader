@@ -1,7 +1,9 @@
 import { ParsedSong } from '../content/parsers/types';
 import { getCachedPrefs, preloadPrefs, savePrefs, Prefs } from '../shared/storage';
+import { Key, inferKey, collectChords } from '../shared/key-infer';
 
 export type LayoutMode = 'vertical' | 'horizontal';
+export type ChordDisplay = 'letter' | 'roman' | 'nashville';
 
 export interface ReaderState {
   song: ParsedSong;
@@ -13,6 +15,11 @@ export interface ReaderState {
   autoScrollSpeed: number;
   autoScrollActive: boolean;
   scrollAnimationId: number | null;
+  chordDisplay: ChordDisplay;
+  /** Key inferred from the song's chord sequence, computed once at init. */
+  inferredKey: Key | null;
+  /** User-selected key; overrides inferredKey when set. Not persisted. */
+  manualKey: Key | null;
   onClose?: () => void;
 }
 
@@ -37,6 +44,9 @@ export function initState(
     autoScrollSpeed: 0.5,
     autoScrollActive: false,
     scrollAnimationId: null,
+    chordDisplay: 'letter',
+    inferredKey: inferKey(collectChords(song.lines)) ?? parseKeyString(song.key),
+    manualKey: null,
     onClose: options.onClose,
   };
   // Prefs are usually cached by the time a reader opens (preloadPrefs runs
@@ -56,6 +66,15 @@ export function clearState(): void {
   current = null;
 }
 
+/**
+ * The key used for scale-degree rendering: manual override beats inferred.
+ * Returns null when neither is available — caller should fall back to
+ * letter display.
+ */
+export function effectiveKey(state: ReaderState): Key | null {
+  return state.manualKey ?? state.inferredKey;
+}
+
 export function savePreferences(): void {
   if (!current) return;
   savePrefs({
@@ -64,6 +83,7 @@ export function savePreferences(): void {
     darkMode: current.darkMode,
     useFlats: current.useFlats,
     autoScrollSpeed: current.autoScrollSpeed,
+    chordDisplay: current.chordDisplay,
   });
 }
 
@@ -73,6 +93,9 @@ function applyPrefs(state: ReaderState, prefs: Prefs): void {
   if (prefs.darkMode !== undefined) state.darkMode = prefs.darkMode;
   if (prefs.useFlats !== undefined) state.useFlats = prefs.useFlats;
   if (prefs.autoScrollSpeed) state.autoScrollSpeed = prefs.autoScrollSpeed;
+  if (prefs.chordDisplay === 'letter' || prefs.chordDisplay === 'roman' || prefs.chordDisplay === 'nashville') {
+    state.chordDisplay = prefs.chordDisplay;
+  }
 }
 
 /**
@@ -96,4 +119,16 @@ export function loadPreferences(state: ReaderState, onAsyncLoad?: () => void): v
       // explicit catch so a future rejection can't hang the caller waiting
       // on a one-time pref-applied callback.
     });
+}
+
+/**
+ * Parse a key string from a parser's preamble (e.g. "G", "Am", "Bbm") into
+ * a structured Key. Returns null for unparseable strings.
+ */
+function parseKeyString(s: string | undefined): Key | null {
+  if (!s) return null;
+  const m = s.trim().match(/^([A-G])([#b]?)(m)?$/i);
+  if (!m) return null;
+  const tonic = m[1].toUpperCase() + (m[2] || '').toLowerCase();
+  return { tonic, mode: m[3] ? 'minor' : 'major' };
 }

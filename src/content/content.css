@@ -316,6 +316,36 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ls-select {
+  background: #f0f0f0;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 13px;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.ls-select:hover {
+  background: #e0e0e0;
+}
+
+.ls-dark .ls-select {
+  background: #2a2e36;
+  border-color: #3a3f48;
+}
+
+.ls-dark .ls-select:hover {
+  background: #3a3f48;
+}
+
+.ls-dark .ls-select option {
+  background: #2a2e36;
+  color: #d4d7dc;
+}
+
 /*
  * Transpose display shows "+N (Key)" — widen the value slot so the toolbar
  * doesn't jitter as the user steps through semitones. Sized for the widest

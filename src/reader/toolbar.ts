@@ -1,5 +1,5 @@
 import { getEl } from './dom';
-import { getState, savePreferences } from './state';
+import { getState, savePreferences, ChordDisplay } from './state';
 import {
   startAutoScroll,
   stopAutoScroll,
@@ -10,6 +10,7 @@ import {
   SCROLL_MAX,
 } from './scroll';
 import { html, HtmlString } from '../shared/html';
+import { Key, Mode } from '../shared/key-infer';
 
 /**
  * Toolbar: HTML template, event bindings, and responsive overflow menu.
@@ -63,6 +64,20 @@ export function buildToolbarHTML(): HtmlString {
           <div class="ls-control-row ls-btn-group">
             <button class="ls-btn" id="ls-accidental-sharp" title="Use sharps (C#, F#, ...)">♯</button>
             <button class="ls-btn" id="ls-accidental-flat" title="Use flats (Db, Gb, ...)">♭</button>
+          </div>
+        </div>
+        <div class="ls-control-group" data-priority="7">
+          <span class="ls-label">Display</span>
+          <div class="ls-control-row ls-btn-group">
+            <button class="ls-btn" id="ls-display-letter" title="Letter names (C, G, Am)">ABC</button>
+            <button class="ls-btn" id="ls-display-roman" title="Roman numerals (I, V, vi)">Roman</button>
+            <button class="ls-btn" id="ls-display-nashville" title="Nashville numbers (1, 5, 6m)">1-2-3</button>
+          </div>
+        </div>
+        <div class="ls-control-group" data-priority="8" id="ls-key-group">
+          <span class="ls-label">Degree key</span>
+          <div class="ls-control-row">
+            <select class="ls-select" id="ls-key-select" title="Key used for scale-degree display"></select>
           </div>
         </div>
         <div class="ls-control-group" data-priority="6">
@@ -160,6 +175,29 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
   getEl('ls-theme-light')!.addEventListener('click', toggleTheme);
   getEl('ls-theme-dark')!.addEventListener('click', toggleTheme);
 
+  // Display mode (letter / roman / nashville)
+  const setDisplay = (mode: ChordDisplay) => {
+    state.chordDisplay = mode;
+    onChange();
+    savePreferences();
+  };
+  getEl('ls-display-letter')!.addEventListener('click', () => setDisplay('letter'));
+  getEl('ls-display-roman')!.addEventListener('click', () => setDisplay('roman'));
+  getEl('ls-display-nashville')!.addEventListener('click', () => setDisplay('nashville'));
+
+  // Key override select
+  populateKeySelect();
+  const keySelect = getEl<HTMLSelectElement>('ls-key-select')!;
+  keySelect.addEventListener('change', () => {
+    const value = keySelect.value;
+    if (value === 'auto') {
+      state.manualKey = null;
+    } else {
+      state.manualKey = parseSelectValue(value);
+    }
+    onChange();
+  });
+
   // Overflow menu (hamburger dropdown)
   const overflowToggle = getEl('ls-overflow-toggle')!;
   const overflowPanel = getEl('ls-overflow-panel')!;
@@ -237,6 +275,63 @@ export function syncToolbarToState(): void {
   // Theme toggle active state
   getEl('ls-theme-light')?.classList.toggle('ls-active', !state.darkMode);
   getEl('ls-theme-dark')?.classList.toggle('ls-active', state.darkMode);
+
+  // Display-mode active state
+  getEl('ls-display-letter')?.classList.toggle('ls-active', state.chordDisplay === 'letter');
+  getEl('ls-display-roman')?.classList.toggle('ls-active', state.chordDisplay === 'roman');
+  getEl('ls-display-nashville')?.classList.toggle('ls-active', state.chordDisplay === 'nashville');
+
+  // Key select: shown/hidden based on display mode; reflects effective key
+  const keyGroup = getEl('ls-key-group');
+  const wasHidden = keyGroup?.style.display === 'none';
+  const shouldHide = state.chordDisplay === 'letter';
+  if (keyGroup) keyGroup.style.display = shouldHide ? 'none' : '';
+  const keySelect = getEl<HTMLSelectElement>('ls-key-select');
+  if (keySelect) {
+    keySelect.value = state.manualKey ? keyToSelectValue(state.manualKey) : 'auto';
+    // Refresh 'auto' label so it reflects the current inferred key.
+    const autoOption = keySelect.querySelector<HTMLOptionElement>('option[value="auto"]');
+    if (autoOption) {
+      autoOption.textContent = state.inferredKey
+        ? `Auto (${formatKey(state.inferredKey)})`
+        : 'Auto (unknown)';
+    }
+  }
+
+  // Visibility of the key group changed — re-run overflow so we don't leave
+  // the toolbar silently overflowing its container.
+  if (wasHidden !== shouldHide) scheduleToolbarUpdate();
+}
+
+const TONICS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+function formatKey(k: Key): string {
+  return k.mode === 'minor' ? `${k.tonic} minor` : `${k.tonic} major`;
+}
+
+function keyToSelectValue(k: Key): string {
+  return `${k.tonic}-${k.mode}`;
+}
+
+function parseSelectValue(v: string): Key | null {
+  const m = v.match(/^([A-G][#b]?)-(major|minor)$/);
+  if (!m) return null;
+  return { tonic: m[1], mode: m[2] as Mode };
+}
+
+function populateKeySelect(): void {
+  const sel = getEl<HTMLSelectElement>('ls-key-select');
+  if (!sel) return;
+  const makeOpt = (value: string, label: string) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    return opt;
+  };
+  sel.replaceChildren();
+  sel.appendChild(makeOpt('auto', 'Auto'));
+  for (const tonic of TONICS) sel.appendChild(makeOpt(`${tonic}-major`, `${tonic} major`));
+  for (const tonic of TONICS) sel.appendChild(makeOpt(`${tonic}-minor`, `${tonic} minor`));
 }
 
 /**

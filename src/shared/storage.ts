@@ -19,6 +19,7 @@ export interface Prefs {
   darkMode?: boolean;
   useFlats?: boolean;
   autoScrollSpeed?: number;
+  chordDisplay?: 'letter' | 'roman' | 'nashville';
 }
 
 const STORAGE_KEY = 'prefs';

@@ -1,7 +1,27 @@
 import { transposeChord } from '../shared/transpose';
+import { formatChordAsDegree } from '../shared/roman';
 import { isChordOnlyLine, detectChordsInText } from '../shared/chord-detect';
-import { getState } from './state';
+import { getState, effectiveKey, ReaderState } from './state';
 import { html, HtmlString, render } from '../shared/html';
+
+/**
+ * Format a chord per the reader's display mode. Letter mode applies the
+ * transpose/accidental prefs. Roman/Nashville mode renders the chord as a
+ * scale degree relative to the effective key (manual override if set, else
+ * inferred); transpose is intentionally a no-op in degree modes, since
+ * degrees are key-relative and already invariant under transposition.
+ * Falls back to letter display when no key is available.
+ */
+function formatChord(chord: string, state: ReaderState): string {
+  if (state.chordDisplay === 'letter') {
+    return transposeChord(chord, state.transposeSemitones, state.useFlats);
+  }
+  const key = effectiveKey(state);
+  if (!key) {
+    return transposeChord(chord, state.transposeSemitones, state.useFlats);
+  }
+  return formatChordAsDegree(chord, key.tonic, state.chordDisplay);
+}
 
 /**
  * Render the full song into the given container.
@@ -98,7 +118,7 @@ function renderChordLine(line: {
   // as "EAbm" — the Gb-ified chord eats the whitespace separator.
   const sortedChords = [...effectiveChords]
     .map((cp) => ({
-      text: transposeChord(cp.chord, state.transposeSemitones, state.useFlats),
+      text: formatChord(cp.chord, state),
       position: cp.position,
     }))
     .sort((a, b) => a.position - b.position);
@@ -110,11 +130,19 @@ function renderChordLine(line: {
 
   for (const cp of sortedChords) {
     // Never place a chord before where the previous chord ended (+1 space).
+    // If that pushes the chord past the array end, pad with spaces up to the
+    // target index before writing — otherwise a naive push would drop the
+    // chord directly after the array's current last char, collapsing the
+    // gap we just enforced (e.g. "D2 D" rendering as "D2D").
     const start = Math.max(cp.position, cursor);
     for (let i = 0; i < cp.text.length; i++) {
       const idx = start + i;
-      if (idx < chordChars.length) chordChars[idx] = cp.text[i];
-      else chordChars.push(cp.text[i]);
+      if (idx < chordChars.length) {
+        chordChars[idx] = cp.text[i];
+      } else {
+        while (chordChars.length < idx) chordChars.push(' ');
+        chordChars.push(cp.text[i]);
+      }
     }
     cursor = start + cp.text.length + 1;
   }
@@ -153,12 +181,8 @@ function renderInlineChordLine(
     if (cp.position > cursor) {
       parts.push(html`${text.substring(cursor, cp.position)}`);
     }
-    const transposed = transposeChord(
-      cp.chord,
-      state.transposeSemitones,
-      state.useFlats
-    );
-    parts.push(html`<span class="ls-chords">${transposed}</span>`);
+    const formatted = formatChord(cp.chord, state);
+    parts.push(html`<span class="ls-chords">${formatted}</span>`);
     cursor = cp.position + cp.chord.length;
   }
   if (cursor < text.length) {

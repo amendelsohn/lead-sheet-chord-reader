@@ -63,7 +63,11 @@ export function attachKeyboard(onChange: () => void, onClose: () => void): void 
         onChange();
         break;
       case 'd':
-        state.darkMode = !state.darkMode;
+        // Quick light/dark toggle. If the user is on any other theme
+        // (system, sepia, solarized, …) 'd' snaps them to 'dark' first;
+        // a second press flips to 'light'. Keeps the pre-theme muscle
+        // memory while letting power users reach the picker for others.
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
         onChange();
         savePreferences();
         break;

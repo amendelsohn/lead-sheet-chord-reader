@@ -45,19 +45,89 @@
   pointer-events: auto;
 }
 
-/* ---- Reader Container ---- */
+/* ---- Theme variables ----
+ * Every color used anywhere inside .ls-reader is declared here as a CSS
+ * custom property. Themes override these on the reader root — see
+ * src/reader/themes.ts. The defaults below reproduce the original light
+ * theme; .ls-dark (kept for backward-compat but no longer the main hook)
+ * mirrors the dark overrides. Theme selection at runtime uses
+ * data-theme="<id>" attributes on .ls-reader which map to theme blocks in
+ * themes.ts (applied via inline style custom properties).
+ */
 .ls-reader {
+  /* Surfaces */
+  --ls-bg: #fafafa;
+  --ls-fg: #1a1a1a;
+  --ls-toolbar-bg: #fff;
+  --ls-toolbar-border: #e0e0e0;
+  --ls-overflow-panel-bg: #fff;
+  --ls-overflow-panel-border: #d0d0d0;
+  --ls-overflow-panel-shadow: rgba(0, 0, 0, 0.15);
+
+  /* Controls */
+  --ls-btn-bg: #f0f0f0;
+  --ls-btn-border: #d0d0d0;
+  --ls-btn-hover-bg: #e0e0e0;
+  --ls-btn-active-bg: #4a4ae0;
+  --ls-btn-active-fg: #fff;
+  --ls-btn-active-border: #4a4ae0;
+  --ls-select-bg: #f0f0f0;
+  --ls-select-border: #d0d0d0;
+  --ls-select-hover-bg: #e0e0e0;
+  --ls-select-option-bg: #fff;
+  --ls-select-option-fg: #1a1a1a;
+
+  /* Content */
+  --ls-chord: #3a5a8c;
+  --ls-section-header-fg: #6b7280;
+  --ls-col-separator: #e0e0e0;
+  --ls-meta-border: #e0e0e0;
+
+  /* Scrollbar + fade affordance. --ls-bg-rgb is the RGB of --ls-bg so the
+   * horizontal-scroll fade gradient (linear-gradient with alpha) stays
+   * consistent with each theme's background. */
+  --ls-scrollbar-thumb: #c0c0c0;
+  --ls-bg-rgb: 250, 250, 250;
+
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fafafa;
-  color: #1a1a1a;
+  background: var(--ls-bg);
+  color: var(--ls-fg);
 }
 
+/* Dark overlay retained so `.ls-dark` selectors still work during migration
+ * and for anyone who toggles the class directly. Theme application via
+ * data-theme uses inline custom properties which win over these. */
 .ls-reader.ls-dark {
-  background: #14171c;
-  color: #d4d7dc;
+  --ls-bg: #14171c;
+  --ls-fg: #d4d7dc;
+  --ls-toolbar-bg: #1a1d23;
+  --ls-toolbar-border: #2a2e36;
+  --ls-overflow-panel-bg: #1a1d23;
+  --ls-overflow-panel-border: #3a3f48;
+  --ls-overflow-panel-shadow: rgba(0, 0, 0, 0.5);
+
+  --ls-btn-bg: #2a2e36;
+  --ls-btn-border: #3a3f48;
+  --ls-btn-hover-bg: #3a3f48;
+  --ls-btn-active-bg: #5a7eb8;
+  --ls-btn-active-fg: #fff;
+  --ls-btn-active-border: #5a7eb8;
+  --ls-select-bg: #2a2e36;
+  --ls-select-border: #3a3f48;
+  --ls-select-hover-bg: #3a3f48;
+  --ls-select-option-bg: #2a2e36;
+  --ls-select-option-fg: #d4d7dc;
+
+  --ls-chord: #82a5d2;
+  --ls-section-header-fg: #9ca3af;
+  --ls-col-separator: #2a2e36;
+  --ls-meta-border: #2a2e36;
+
+  --ls-scrollbar-thumb: #3a3f48;
+  --ls-bg-rgb: 20, 23, 28;
 }
 
 /* ---- Toolbar ---- */
@@ -67,17 +137,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--ls-toolbar-bg);
+  border-bottom: 1px solid var(--ls-toolbar-border);
   flex-shrink: 0;
   gap: 16px;
   flex-wrap: nowrap;
   overflow: visible;
-}
-
-.ls-dark .ls-toolbar {
-  background: #1a1d23;
-  border-bottom-color: #2a2e36;
 }
 
 .ls-toolbar-left {
@@ -148,15 +213,11 @@
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
   padding-left: 4px;
-  border-left: 1px solid #e0e0e0;
+  border-left: 1px solid var(--ls-meta-border);
 }
 
 .ls-meta:empty {
   display: none;
-}
-
-.ls-dark .ls-meta {
-  border-left-color: #2a2e36;
 }
 
 /* ---- Overflow Panel (Hamburger Dropdown) ---- */
@@ -166,10 +227,10 @@
   top: calc(100% + 4px);
   right: 12px;
   z-index: 10;
-  background: #fff;
-  border: 1px solid #d0d0d0;
+  background: var(--ls-overflow-panel-bg);
+  border: 1px solid var(--ls-overflow-panel-border);
   border-radius: 6px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 24px var(--ls-overflow-panel-shadow);
   padding: 12px 16px;
   flex-direction: column;
   gap: 12px;
@@ -192,16 +253,10 @@
   flex-wrap: wrap;
 }
 
-.ls-dark .ls-overflow-panel {
-  background: #1a1d23;
-  border-color: #3a3f48;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-}
-
 /* ---- Buttons ---- */
 .ls-btn {
-  background: #f0f0f0;
-  border: 1px solid #d0d0d0;
+  background: var(--ls-btn-bg);
+  border: 1px solid var(--ls-btn-border);
   border-radius: 4px;
   padding: 4px 10px;
   font-size: 13px;
@@ -215,7 +270,7 @@
 
 @media (hover: hover) {
   .ls-btn:hover {
-    background: #e0e0e0;
+    background: var(--ls-btn-hover-bg);
   }
 }
 
@@ -262,43 +317,18 @@
  */
 @media (hover: hover) {
   .ls-btn-group:hover > .ls-btn:not(.ls-active) {
-    background: #e0e0e0;
-  }
-
-  .ls-dark .ls-btn-group:hover > .ls-btn:not(.ls-active) {
-    background: #3a3f48;
+    background: var(--ls-btn-hover-bg);
   }
 
   .ls-btn:disabled:hover {
-    background: #f0f0f0;
-  }
-
-  .ls-dark .ls-btn:disabled:hover {
-    background: #2a2e36;
-  }
-}
-
-.ls-dark .ls-btn {
-  background: #2a2e36;
-  border-color: #3a3f48;
-}
-
-@media (hover: hover) {
-  .ls-dark .ls-btn:hover {
-    background: #3a3f48;
+    background: var(--ls-btn-bg);
   }
 }
 
 .ls-btn.ls-active {
-  background: #4a4ae0;
-  color: #fff;
-  border-color: #4a4ae0;
-}
-
-.ls-dark .ls-btn.ls-active {
-  background: #5a7eb8;
-  border-color: #5a7eb8;
-  color: #fff;
+  background: var(--ls-btn-active-bg);
+  color: var(--ls-btn-active-fg);
+  border-color: var(--ls-btn-active-border);
 }
 
 .ls-close,
@@ -351,8 +381,8 @@
 }
 
 .ls-select {
-  background: #f0f0f0;
-  border: 1px solid #d0d0d0;
+  background: var(--ls-select-bg);
+  border: 1px solid var(--ls-select-border);
   border-radius: 4px;
   padding: 4px 6px;
   font-size: 13px;
@@ -364,24 +394,13 @@
 
 @media (hover: hover) {
   .ls-select:hover {
-    background: #e0e0e0;
+    background: var(--ls-select-hover-bg);
   }
 }
 
-.ls-dark .ls-select {
-  background: #2a2e36;
-  border-color: #3a3f48;
-}
-
-@media (hover: hover) {
-  .ls-dark .ls-select:hover {
-    background: #3a3f48;
-  }
-}
-
-.ls-dark .ls-select option {
-  background: #2a2e36;
-  color: #d4d7dc;
+.ls-select option {
+  background: var(--ls-select-option-bg);
+  color: var(--ls-select-option-fg);
 }
 
 /*
@@ -391,6 +410,38 @@
  */
 #ls-transpose-value {
   min-width: 4em;
+}
+
+/*
+ * Theme picker row: the swatch sits left of the select. The swatch is a
+ * fixed-size chip split into three equal horizontal bands (bg / fg / accent)
+ * so the user recognizes the active theme at a glance.
+ */
+.ls-theme-row {
+  gap: 6px;
+}
+
+.ls-theme-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--ls-btn-border);
+  flex-shrink: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      var(--ls-swatch-bg, #fafafa) 0 33.33%,
+      var(--ls-swatch-fg, #1a1a1a) 33.33% 66.66%,
+      var(--ls-swatch-accent, #3a5a8c) 66.66% 100%
+    );
+}
+
+@media (pointer: coarse) {
+  .ls-theme-swatch {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 /* ---- Content Area ---- */
@@ -415,16 +466,20 @@
    * content's true right edge — visible inside the viewport only while
    * there's more content to scroll to, and naturally receding as the user
    * reaches the end. Pointer-events unaffected (backgrounds don't capture).
+   *
+   * The gradient uses rgba() derived from --ls-bg-rgb so it matches the
+   * active theme's background. Kept as two stops: opaque-ish at the right
+   * edge, transparent ~28px inward.
    */
-  background-image: linear-gradient(to left, rgba(250, 250, 250, 0.9) 0, rgba(250, 250, 250, 0) 28px);
+  background-image: linear-gradient(
+    to left,
+    rgba(var(--ls-bg-rgb), 0.9) 0,
+    rgba(var(--ls-bg-rgb), 0) 28px
+  );
   background-repeat: no-repeat;
   background-attachment: local;
   background-position: top right;
   background-size: 100% 100%;
-}
-
-.ls-dark .ls-layout-vertical .ls-content {
-  background-image: linear-gradient(to left, rgba(20, 23, 28, 0.9) 0, rgba(20, 23, 28, 0) 28px);
 }
 
 /*
@@ -498,12 +553,8 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: #e0e0e0;
+  background: var(--ls-col-separator);
   pointer-events: none;
-}
-
-.ls-dark .ls-col-separator {
-  background: #2a2e36;
 }
 
 /* ---- Song Lines ---- */
@@ -515,13 +566,9 @@
 }
 
 .ls-chords {
-  color: #3a5a8c;
+  color: var(--ls-chord);
   font-weight: 700;
   white-space: pre;
-}
-
-.ls-dark .ls-chords {
-  color: #82a5d2;
 }
 
 .ls-lyrics {
@@ -535,12 +582,8 @@
   letter-spacing: 0.5px;
   margin-top: 1.2em;
   margin-bottom: 0.3em;
-  color: #6b7280;
+  color: var(--ls-section-header-fg);
   break-after: avoid;
-}
-
-.ls-dark .ls-section-header {
-  color: #9ca3af;
 }
 
 .ls-empty-line {
@@ -561,12 +604,8 @@
 }
 
 .ls-content::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
+  background: var(--ls-scrollbar-thumb);
   border-radius: 4px;
-}
-
-.ls-dark .ls-content::-webkit-scrollbar-thumb {
-  background: #3a3f48;
 }
 
 /* ---- Touch devices ----
@@ -602,8 +641,19 @@
   }
 }
 
-/* ---- Print ---- */
+/* ---- Print ----
+ * Force a clean light render regardless of the active theme. Variables are
+ * overridden first (so any derived background-image gradients also reset)
+ * and hard !important falls back for properties that reference literal
+ * colors the theme might have changed.
+ */
 @media print {
+  .ls-reader {
+    --ls-bg: #fff;
+    --ls-fg: #000;
+    --ls-chord: #000;
+    --ls-bg-rgb: 255, 255, 255;
+  }
   .ls-toolbar {
     display: none !important;
   }

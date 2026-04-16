@@ -1,6 +1,7 @@
 import { ParsedSong } from '../content/parsers/types';
 import { getCachedPrefs, preloadPrefs, savePrefs, Prefs } from '../shared/storage';
 import { Key, inferKey, collectChords } from '../shared/key-infer';
+import { ThemeId, DEFAULT_THEME, isThemeId } from './themes';
 
 export type LayoutMode = 'vertical' | 'horizontal';
 export type ChordDisplay = 'letter' | 'roman' | 'nashville';
@@ -11,7 +12,7 @@ export interface ReaderState {
   useFlats: boolean;
   layout: LayoutMode;
   fontSize: number;
-  darkMode: boolean;
+  theme: ThemeId;
   autoScrollSpeed: number;
   autoScrollActive: boolean;
   scrollAnimationId: number | null;
@@ -40,7 +41,7 @@ export function initState(
     useFlats: true,
     layout: 'vertical',
     fontSize: 14,
-    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    theme: DEFAULT_THEME,
     autoScrollSpeed: 0.5,
     autoScrollActive: false,
     scrollAnimationId: null,
@@ -80,7 +81,7 @@ export function savePreferences(): void {
   savePrefs({
     fontSize: current.fontSize,
     layout: current.layout,
-    darkMode: current.darkMode,
+    theme: current.theme,
     useFlats: current.useFlats,
     autoScrollSpeed: current.autoScrollSpeed,
     chordDisplay: current.chordDisplay,
@@ -90,7 +91,7 @@ export function savePreferences(): void {
 function applyPrefs(state: ReaderState, prefs: Prefs): void {
   if (prefs.fontSize) state.fontSize = prefs.fontSize;
   if (prefs.layout === 'vertical' || prefs.layout === 'horizontal') state.layout = prefs.layout;
-  if (prefs.darkMode !== undefined) state.darkMode = prefs.darkMode;
+  if (prefs.theme !== undefined && isThemeId(prefs.theme)) state.theme = prefs.theme;
   if (prefs.useFlats !== undefined) state.useFlats = prefs.useFlats;
   if (prefs.autoScrollSpeed) state.autoScrollSpeed = prefs.autoScrollSpeed;
   if (prefs.chordDisplay === 'letter' || prefs.chordDisplay === 'roman' || prefs.chordDisplay === 'nashville') {

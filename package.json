@@ -12,11 +12,13 @@
     "dev:firefox": "node build.mjs --watch --target=firefox",
     "android:run": "web-ext run -t firefox-android --firefox-apk=org.mozilla.fenix --source-dir=./dist-firefox",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts",
     "clean": "rm -rf dist dist-firefox"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",
     "esbuild": "^0.25.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0",
     "web-ext": "^8.0.0"
   }

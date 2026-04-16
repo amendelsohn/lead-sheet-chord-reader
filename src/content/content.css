@@ -147,7 +147,8 @@
   padding: 12px 16px;
   flex-direction: column;
   gap: 12px;
-  min-width: 240px;
+  /* Width hugs the widest control group inside */
+  width: max-content;
 }
 
 .ls-overflow-panel.ls-open {
@@ -179,6 +180,7 @@
   transition: background 0.1s;
   line-height: 1.4;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .ls-btn:hover {
@@ -263,10 +265,19 @@
   color: #fff;
 }
 
-.ls-close {
+.ls-close,
+#ls-overflow-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
   font-size: 16px;
   font-weight: bold;
-  padding: 4px 8px;
+  /* Some unicode glyphs (✕, ☰) sit off-center on the line. inline-flex +
+     line-height: 1 centers the glyph reliably. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /*

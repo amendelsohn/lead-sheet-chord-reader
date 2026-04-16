@@ -101,11 +101,16 @@ function extractMetadata(): { key?: string; capo?: number; tuning?: string } {
 function parseContent(preEl: Element): SongLine[] {
   const lines: SongLine[] = [];
 
-  // Walk through the pre element's content
-  // UG structures content as text nodes and span elements within the pre
-  // We need to process it line by line based on newlines
+  // UG occasionally injects UI noise inside the <pre> (tracking pixels,
+  // widget buttons, etc.) — e.g. <div class="d8c-l">X</div> at the end.
+  // Strip any non-<span> descendants before parsing so their text doesn't
+  // show up as phantom lyric lines. Chord content is only <span>s + text.
+  const clone = preEl.cloneNode(true) as Element;
+  for (const el of Array.from(clone.querySelectorAll('*'))) {
+    if (el.tagName !== 'SPAN') el.remove();
+  }
 
-  const rawText = preEl.innerHTML;
+  const rawText = clone.innerHTML;
   const htmlLines = rawText.split('\n');
 
   for (const htmlLine of htmlLines) {

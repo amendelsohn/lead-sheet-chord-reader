@@ -63,9 +63,15 @@ export function buildToolbarHTML(): HtmlString {
             <button class="ls-btn" id="ls-accidental-flat" title="Use flats (Db, Gb, ...)">♭</button>
           </div>
         </div>
+        <div class="ls-control-group" data-priority="6">
+          <span class="ls-label">Theme</span>
+          <div class="ls-control-row ls-btn-group">
+            <button class="ls-btn" id="ls-theme-light" title="Light theme">☀</button>
+            <button class="ls-btn" id="ls-theme-dark" title="Dark theme">☾</button>
+          </div>
+        </div>
       </div>
       <div class="ls-toolbar-right">
-        <button class="ls-btn ls-toggle" id="ls-dark-toggle" title="Toggle dark mode">◐</button>
         <button class="ls-btn" id="ls-overflow-toggle" title="More controls" aria-label="More controls" style="display: none;">☰</button>
       </div>
       <div class="ls-overflow-panel" id="ls-overflow-panel"></div>
@@ -143,12 +149,14 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
     savePreferences();
   });
 
-  // Dark mode
-  getEl('ls-dark-toggle')!.addEventListener('click', () => {
+  // Theme — either half toggles
+  const toggleTheme = () => {
     state.darkMode = !state.darkMode;
     onChange();
     savePreferences();
-  });
+  };
+  getEl('ls-theme-light')!.addEventListener('click', toggleTheme);
+  getEl('ls-theme-dark')!.addEventListener('click', toggleTheme);
 
   // Overflow menu (hamburger dropdown)
   const overflowToggle = getEl('ls-overflow-toggle')!;
@@ -213,8 +221,9 @@ export function syncToolbarToState(): void {
     scrollToggle.textContent = state.autoScrollActive ? '⏸' : '▶';
   }
 
-  // Dark mode toggle active state
-  getEl('ls-dark-toggle')?.classList.toggle('ls-active', state.darkMode);
+  // Theme toggle active state
+  getEl('ls-theme-light')?.classList.toggle('ls-active', !state.darkMode);
+  getEl('ls-theme-dark')?.classList.toggle('ls-active', state.darkMode);
 }
 
 /**

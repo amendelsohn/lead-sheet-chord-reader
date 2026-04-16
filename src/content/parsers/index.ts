@@ -4,6 +4,7 @@ import { eChordsParser } from './echords';
 import { cifraClubParser } from './cifraclub';
 import { azChordsParser } from './azchords';
 import { ukuTabsParser } from './ukutabs';
+import { chordieParser } from './chordie';
 
 /**
  * Registry of all supported chord sites. To add a new site:
@@ -17,6 +18,7 @@ export const PARSERS: readonly SiteParser[] = [
   cifraClubParser,
   azChordsParser,
   ukuTabsParser,
+  chordieParser,
 ];
 
 /**

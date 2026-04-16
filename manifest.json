@@ -16,7 +16,8 @@
         "*://*.cifraclub.com/*",
         "*://*.cifraclub.com.br/*",
         "*://*.azchords.com/*",
-        "*://*.ukutabs.com/*"
+        "*://*.ukutabs.com/*",
+        "*://*.chordie.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"

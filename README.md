@@ -2,7 +2,7 @@
 
 A Chrome extension that renders chord sheets in a clean, distraction-free reading layout. Parses the existing page content client-side — no scraping, no network calls.
 
-Currently compatible with Ultimate Guitar®, E-Chords, Cifra Club, AZChords, and UkuTabs (trademarks of their respective owners; this project is not affiliated with or endorsed by any of them).
+Currently compatible with Ultimate Guitar®, E-Chords, Cifra Club, AZChords, UkuTabs, and Chordie (trademarks of their respective owners; this project is not affiliated with or endorsed by any of them).
 
 ## Features
 
@@ -59,7 +59,7 @@ npm run dev
 3. Enable **Developer mode** (toggle in top right)
 4. Click **Load unpacked**
 5. Select the `dist/` folder inside this project
-6. Navigate to any chord page on [Ultimate Guitar](https://tabs.ultimate-guitar.com), [E-Chords](https://www.e-chords.com), [Cifra Club](https://www.cifraclub.com), [AZChords](https://www.azchords.com), or [UkuTabs](https://ukutabs.com)
+6. Navigate to any chord page on [Ultimate Guitar](https://tabs.ultimate-guitar.com), [E-Chords](https://www.e-chords.com), [Cifra Club](https://www.cifraclub.com), [AZChords](https://www.azchords.com), [UkuTabs](https://ukutabs.com), or [Chordie](https://www.chordie.com)
 7. Click the ♪ button in the bottom-right corner to open the reader
 
 ### Test URLs
@@ -70,6 +70,7 @@ npm run dev
 - https://www.cifraclub.com/the-beatles/yesterday/
 - https://www.azchords.com/b/beatles-tabs-410/yesterday-tabs-101080.html
 - https://ukutabs.com/t/the-beatles/yesterday/
+- https://www.chordie.com/chord.pere/www.guitartabs.cc/tabs/j/jars_of_clay/amazing_grace_crd_ver_2.html
 
 ### After making changes
 
@@ -93,7 +94,8 @@ src/
 │       ├── echords.ts          # E-Chords parser
 │       ├── cifraclub.ts        # Cifra Club parser
 │       ├── azchords.ts         # AZChords parser
-│       └── ukutabs.ts          # UkuTabs parser
+│       ├── ukutabs.ts          # UkuTabs parser
+│       └── chordie.ts          # Chordie parser
 ├── reader/
 │   ├── reader.ts               # Entry — createReaderView, applyState, close
 │   ├── state.ts                # ReaderState + chrome.storage prefs
@@ -120,6 +122,7 @@ src/
 | Cifra Club | `<b>Am</b>` in `<pre>` inside `<div id="cifra">` |
 | AZChords | Plain-text `<pre id="content">` — inline `(Am)` or chord-over-lyric |
 | UkuTabs | `<a class="ukutabschord">` in `<pre id="ukutabs-song">` |
+| Chordie | `.chordline` / `.textline` divs with `span.absc` chord markers |
 
 ### Adding a new site
 

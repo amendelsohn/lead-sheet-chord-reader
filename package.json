@@ -5,11 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
+    "build": "tsc --noEmit && node build.mjs",
     "dev": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@types/chrome": "^0.1.40",
     "esbuild": "^0.25.0",
     "typescript": "^5.7.0"
   }

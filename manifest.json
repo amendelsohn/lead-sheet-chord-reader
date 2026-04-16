@@ -16,7 +16,6 @@
         "*://www.e-chords.com/chords/*/*"
       ],
       "js": ["content.js"],
-      "css": ["content.css"],
       "run_at": "document_idle"
     }
   ],

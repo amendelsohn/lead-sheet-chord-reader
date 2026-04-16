@@ -1,7 +1,7 @@
-import { SongLine } from '../content/parsers/types';
 import { transposeChord } from '../shared/transpose';
 import { isChordOnlyLine, detectChordsInText } from '../shared/chord-detect';
 import { getState } from './state';
+import { html, HtmlString, render } from '../shared/html';
 
 /**
  * Render the full song into the given container.
@@ -12,20 +12,20 @@ import { getState } from './state';
  */
 export function renderSong(container: HTMLElement): void {
   const lines = getState().song.lines;
-  const out: string[] = [];
+  const out: HtmlString[] = [];
 
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
 
     if (line.type === 'section-header') {
-      out.push(`<div class="ls-section-header">${escapeHtml(line.label)}</div>`);
+      out.push(html`<div class="ls-section-header">${line.label}</div>`);
       i++;
       continue;
     }
 
     if (line.type === 'empty') {
-      out.push('<div class="ls-empty-line">&nbsp;</div>');
+      out.push(html`<div class="ls-empty-line">&nbsp;</div>`);
       i++;
       continue;
     }
@@ -34,7 +34,7 @@ export function renderSong(container: HTMLElement): void {
     // following lyric-only lines so they render as one atomic unit
     const hasChords = line.chords.length > 0 || isChordOnlyLine(line.lyrics);
     if (hasChords) {
-      const group: string[] = [renderChordLine(line)];
+      const group: HtmlString[] = [renderChordLine(line)];
       let j = i + 1;
       while (j < lines.length) {
         const next = lines[j];
@@ -44,7 +44,7 @@ export function renderSong(container: HTMLElement): void {
         j++;
       }
       if (group.length > 1) {
-        out.push(`<div class="ls-group">${group.join('')}</div>`);
+        out.push(html`<div class="ls-group">${group}</div>`);
       } else {
         out.push(group[0]);
       }
@@ -55,13 +55,13 @@ export function renderSong(container: HTMLElement): void {
     }
   }
 
-  container.innerHTML = out.join('\n');
+  render(container, html`${out}`);
 }
 
 function renderChordLine(line: {
   chords: { chord: string; position: number }[];
   lyrics: string;
-}): string {
+}): HtmlString {
   const state = getState();
 
   // Fallback: if the line has no tagged chord spans but the plain text looks
@@ -76,9 +76,9 @@ function renderChordLine(line: {
 
   if (effectiveChords.length === 0) {
     if (line.lyrics.trim() === '') {
-      return '<div class="ls-empty-line">&nbsp;</div>';
+      return html`<div class="ls-empty-line">&nbsp;</div>`;
     }
-    return `<div class="ls-lyric-line">${escapeHtml(line.lyrics)}</div>`;
+    return html`<div class="ls-lyric-line">${line.lyrics}</div>`;
   }
 
   // Build the chord line by placing each transposed chord at its character
@@ -108,10 +108,10 @@ function renderChordLine(line: {
     effectiveLyrics.trim() === '' ||
     isEntirelyCoveredByChords(effectiveLyrics, effectiveChords)
   ) {
-    return `<div class="ls-line"><span class="ls-chords">${escapeHtml(chordStr)}</span></div>`;
+    return html`<div class="ls-line"><span class="ls-chords">${chordStr}</span></div>`;
   }
 
-  return `<div class="ls-line"><span class="ls-chords">${escapeHtml(chordStr)}</span><span class="ls-lyrics">${escapeHtml(effectiveLyrics)}</span></div>`;
+  return html`<div class="ls-line"><span class="ls-chords">${chordStr}</span><span class="ls-lyrics">${effectiveLyrics}</span></div>`;
 }
 
 /**
@@ -143,8 +143,4 @@ function maxChordEnd(chords: { chord: string; position: number }[]): number {
     max = Math.max(max, c.position + c.chord.length);
   }
   return max;
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

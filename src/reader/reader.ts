@@ -1,6 +1,7 @@
 import { ParsedSong } from '../content/parsers/types';
 import { transposeChord } from '../shared/transpose';
 import { getEl } from './dom';
+import { getShadowRoot } from './shadow';
 import { initState, clearState, getState, ReaderOptions } from './state';
 import {
   buildToolbarHTML,
@@ -16,11 +17,12 @@ import {
   updateColumnSeparators,
 } from './scroll';
 import { attachKeyboard, detachKeyboard } from './keyboard';
+import { html, render } from '../shared/html';
 
 export { ReaderOptions } from './state';
 
 export function isReaderOpen(): boolean {
-  return document.getElementById('leadsheet-overlay') !== null;
+  return getEl('leadsheet-overlay') !== null;
 }
 
 export function createReaderView(song: ParsedSong, options: ReaderOptions = {}): void {
@@ -28,10 +30,11 @@ export function createReaderView(song: ParsedSong, options: ReaderOptions = {}):
 
   initState(song, options);
 
+  const root = getShadowRoot();
   const overlay = document.createElement('div');
   overlay.id = 'leadsheet-overlay';
-  overlay.innerHTML = buildOverlayHTML();
-  document.body.appendChild(overlay);
+  render(overlay, buildOverlayHTML());
+  root.appendChild(overlay);
 
   applyState();
   bindToolbarEvents(applyState, closeReader);
@@ -90,8 +93,8 @@ function applyState(): void {
   requestAnimationFrame(() => updateColumnSeparators());
 }
 
-function buildOverlayHTML(): string {
-  return `
+function buildOverlayHTML() {
+  return html`
     <div class="ls-reader" id="ls-reader">
       ${buildToolbarHTML()}
       <main class="ls-content" id="ls-content">
@@ -107,7 +110,7 @@ function closeReader(): void {
   window.removeEventListener('resize', scheduleSeparatorUpdate);
   window.removeEventListener('resize', scheduleToolbarUpdate);
 
-  const overlay = document.getElementById('leadsheet-overlay');
+  const overlay = getEl('leadsheet-overlay');
   if (overlay) overlay.remove();
   document.body.style.overflow = '';
 

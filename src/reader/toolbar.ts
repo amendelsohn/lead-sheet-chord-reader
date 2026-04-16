@@ -7,13 +7,14 @@ import {
   nextSpeedDown,
   transposeStep,
 } from './scroll';
+import { html, HtmlString } from '../shared/html';
 
 /**
  * Toolbar: HTML template, event bindings, and responsive overflow menu.
  */
 
-export function buildToolbarHTML(): string {
-  return `
+export function buildToolbarHTML(): HtmlString {
+  return html`
     <header class="ls-toolbar">
       <div class="ls-toolbar-left">
         <button class="ls-btn ls-close" id="ls-close" title="Close reader (Esc)">✕</button>
@@ -157,10 +158,14 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
     const open = overflowPanel.classList.toggle('ls-open');
     overflowToggle.classList.toggle('ls-active', open);
   });
+  // Outside-click close. composedPath() crosses shadow-DOM boundaries so
+  // the check works whether the click hit our shadow content (retargeted
+  // at the shadow host from document's perspective) or the host page.
   document.addEventListener('click', (e) => {
     if (!overflowPanel.classList.contains('ls-open')) return;
-    if (overflowPanel.contains(e.target as Node)) return;
-    if (overflowToggle.contains(e.target as Node)) return;
+    const path = e.composedPath();
+    if (path.includes(overflowPanel)) return;
+    if (path.includes(overflowToggle)) return;
     overflowPanel.classList.remove('ls-open');
     overflowToggle.classList.remove('ls-active');
   });
@@ -176,13 +181,13 @@ export function syncToolbarToState(): void {
   // Metadata column (title/artist is set elsewhere; this is the key/capo/tuning stack)
   const metaEl = getEl('ls-meta');
   if (metaEl) {
-    const metaLines: string[] = [];
-    if (state.song.key) metaLines.push(`Key: ${escapeHtml(state.song.key)}`);
-    if (state.song.capo && state.song.capo > 0) metaLines.push(`Capo: ${state.song.capo}`);
+    const lines: HtmlString[] = [];
+    if (state.song.key) lines.push(html`<div>Key: ${state.song.key}</div>`);
+    if (state.song.capo && state.song.capo > 0) lines.push(html`<div>Capo: ${state.song.capo}</div>`);
     if (state.song.tuning && !isStandardTuning(state.song.tuning)) {
-      metaLines.push(`Tuning: ${escapeHtml(state.song.tuning)}`);
+      lines.push(html`<div>Tuning: ${state.song.tuning}</div>`);
     }
-    metaEl.innerHTML = metaLines.map((l) => `<div>${l}</div>`).join('');
+    metaEl.innerHTML = html`${lines}`.value;
   }
 
   // Scroll speed + disabled state at range limits
@@ -263,8 +268,4 @@ function getPriority(el: HTMLElement): number {
 
 function isStandardTuning(tuning: string): boolean {
   return tuning.replace(/\s+/g, '').toUpperCase() === 'EADGBE';
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

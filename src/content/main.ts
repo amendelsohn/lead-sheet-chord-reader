@@ -2,6 +2,7 @@ import { parseUltimateGuitar } from './parsers/ug';
 import { parseEChords } from './parsers/echords';
 import { ParsedSong } from './parsers/types';
 import { createReaderView, isReaderOpen } from '../reader/reader';
+import { getShadowRoot } from '../reader/shadow';
 import { preloadPrefs } from '../shared/storage';
 
 /**
@@ -97,7 +98,7 @@ function processPage() {
 }
 
 function openReader(song: ParsedSong) {
-  const fab = document.getElementById('leadsheet-fab');
+  const fab = getShadowRoot().getElementById('leadsheet-fab');
   if (fab) fab.remove();
   createReaderView(song, { onClose: handleReaderClose });
 }
@@ -109,7 +110,8 @@ function handleReaderClose() {
 }
 
 function injectFAB() {
-  if (document.getElementById('leadsheet-fab')) return;
+  const root = getShadowRoot();
+  if (root.getElementById('leadsheet-fab')) return;
   const fab = document.createElement('button');
   fab.id = 'leadsheet-fab';
   fab.innerHTML = '♪';
@@ -120,7 +122,7 @@ function injectFAB() {
     const song = tryParse();
     if (song) openReader(song);
   });
-  document.body.appendChild(fab);
+  root.appendChild(fab);
 }
 
 function startObserver() {

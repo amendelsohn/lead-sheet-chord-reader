@@ -278,7 +278,7 @@ export const THEMES: Theme[] = [
   { id: 'nord', label: 'Nord', base: 'dark', vars: NORD_VARS },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'system';
+export const DEFAULT_THEME: ThemeId = 'nord';
 
 export function isThemeId(value: unknown): value is ThemeId {
   if (typeof value !== 'string') return false;

@@ -15,18 +15,22 @@ NOTE_TO_INDEX['Cb'] = 11; // B
 
 /**
  * Parse a chord string into root note, optional bass note, and suffix.
+ * The trailing `*` marks an alternate fingering and is preserved through transpose.
  * Examples:
- *   "Am7"    -> { root: "A", suffix: "m7", bass: undefined }
- *   "D/F#"   -> { root: "D", suffix: "", bass: "F#" }
- *   "C#m7/G#" -> { root: "C#", suffix: "m7", bass: "G#" }
+ *   "Am7"     -> { root: "A",  suffix: "m7", bass: undefined, alt: false }
+ *   "D/F#"    -> { root: "D",  suffix: "",   bass: "F#",      alt: false }
+ *   "C#m7/G#" -> { root: "C#", suffix: "m7", bass: "G#",      alt: false }
+ *   "F*"      -> { root: "F",  suffix: "",   bass: undefined, alt: true }
+ *   "FM7/E*"  -> { root: "F",  suffix: "M7", bass: "E",       alt: true }
  */
-export function parseChord(chord: string): { root: string; suffix: string; bass?: string } | null {
-  const match = chord.match(/^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?$/);
+export function parseChord(chord: string): { root: string; suffix: string; bass?: string; alt: boolean } | null {
+  const match = chord.match(/^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?(\*?)$/);
   if (!match) return null;
   return {
     root: match[1],
     suffix: match[2],
     bass: match[3] || undefined,
+    alt: match[4] === '*',
   };
 }
 
@@ -50,5 +54,5 @@ export function transposeChord(chord: string, semitones: number, useFlats: boole
 
   const newRoot = transposeNote(parsed.root, semitones, useFlats);
   const newBass = parsed.bass ? transposeNote(parsed.bass, semitones, useFlats) : undefined;
-  return newRoot + parsed.suffix + (newBass ? '/' + newBass : '');
+  return newRoot + parsed.suffix + (newBass ? '/' + newBass : '') + (parsed.alt ? '*' : '');
 }

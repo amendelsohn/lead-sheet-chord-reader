@@ -109,49 +109,49 @@ function parseContent(preEl: Element): SongLine[] {
   const htmlLines = rawText.split('\n');
 
   for (const htmlLine of htmlLines) {
-    const trimmed = htmlLine.trim();
+    // IMPORTANT: do NOT trim the HTML line — leading whitespace positions
+    // chord letters above the correct lyric chars on the next line. UG's
+    // chord sheet format relies on monospace alignment within a <pre>, so
+    // every space character matters.
+    const plainText = stripHtml(htmlLine);
 
-    if (trimmed === '') {
+    if (plainText.trim() === '') {
       lines.push({ type: 'empty' });
       continue;
     }
 
     // Check for section header: [Intro], [Verse 1], etc.
-    const plainText = stripHtml(trimmed);
-    const sectionMatch = plainText.match(/^\[(.+)\]$/);
+    const sectionMatch = plainText.trim().match(/^\[(.+)\]$/);
     if (sectionMatch) {
       lines.push({ type: 'section-header', label: sectionMatch[1] });
       continue;
     }
 
-    // Check if line contains chord spans
-    const chordMatches = [...trimmed.matchAll(/data-name="([^"]+)"/g)];
-    if (chordMatches.length > 0) {
-      // This is a chord line — extract chord positions
-      // We need to figure out where each chord sits relative to the text
-      const chords = extractChordPositions(trimmed);
-      const lyrics = stripHtml(trimmed);
+    // Check if line contains chord spans (UG or E-Chords markup)
+    const hasUgChords = /data-name="[^"]+"/.test(htmlLine);
+    const hasEChords = /data-chord="[^"]+"/.test(htmlLine);
 
+    if (hasUgChords) {
+      const chords = extractChordPositions(htmlLine);
       lines.push({
         type: 'chord-line',
         chords,
-        lyrics,
+        lyrics: plainText,
+      });
+    } else if (hasEChords) {
+      const chords = extractChordPositionsEChords(htmlLine);
+      lines.push({
+        type: 'chord-line',
+        chords,
+        lyrics: plainText,
       });
     } else {
-      // Check for e-chords style data-chord spans
-      const eChordMatches = [...trimmed.matchAll(/data-chord="([^"]+)"/g)];
-      if (eChordMatches.length > 0) {
-        const chords = extractChordPositionsEChords(trimmed);
-        const lyrics = stripHtml(trimmed);
-        lines.push({ type: 'chord-line', chords, lyrics });
-      } else {
-        // Pure lyric line or other text — treat as lyrics with no chords
-        lines.push({
-          type: 'chord-line',
-          chords: [],
-          lyrics: plainText,
-        });
-      }
+      // Pure text line — preserve exact whitespace
+      lines.push({
+        type: 'chord-line',
+        chords: [],
+        lyrics: plainText,
+      });
     }
   }
 
@@ -182,7 +182,14 @@ function extractChordPositions(htmlLine: string): ChordPosition[] {
       const el = node as HTMLElement;
       const chordName = el.getAttribute('data-name');
       if (chordName) {
-        chords.push({ chord: chordName, position: textPos });
+        let fullChord = chordName;
+        // If the next sibling text starts with '*', treat it as an alt-fingering marker
+        // that belongs to this chord (common convention, e.g., "F*" for alternate F voicing)
+        const nextSib = el.nextSibling;
+        if (nextSib && nextSib.nodeType === Node.TEXT_NODE && (nextSib.textContent || '').startsWith('*')) {
+          fullChord += '*';
+        }
+        chords.push({ chord: fullChord, position: textPos });
         textPos += (el.textContent || '').length;
       } else {
         for (const child of el.childNodes) {
@@ -212,7 +219,12 @@ function extractChordPositionsEChords(htmlLine: string): ChordPosition[] {
       const el = node as HTMLElement;
       const chordName = el.getAttribute('data-chord');
       if (chordName) {
-        chords.push({ chord: chordName, position: textPos });
+        let fullChord = chordName;
+        const nextSib = el.nextSibling;
+        if (nextSib && nextSib.nodeType === Node.TEXT_NODE && (nextSib.textContent || '').startsWith('*')) {
+          fullChord += '*';
+        }
+        chords.push({ chord: fullChord, position: textPos });
         textPos += (el.textContent || '').length;
       } else {
         for (const child of el.childNodes) {

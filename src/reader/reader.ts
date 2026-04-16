@@ -1,5 +1,6 @@
 import { ParsedSong, SongLine } from '../content/parsers/types';
 import { transposeChord } from '../shared/transpose';
+import { isChordOnlyLine, detectChordsInText } from '../shared/chord-detect';
 
 interface ReaderState {
   song: ParsedSong;
@@ -187,7 +188,17 @@ function renderSong(container: HTMLElement) {
 }
 
 function renderChordLine(line: { chords: { chord: string; position: number }[]; lyrics: string }): string {
-  if (line.chords.length === 0) {
+  // Heuristic: if the line has no detected chord spans but the plain text looks
+  // like a chord-only line (e.g., "F    Am    Bb    C"), treat it as chords.
+  // This handles tabs where the author didn't wrap chord names in [ch] tags.
+  let effectiveChords = line.chords;
+  let effectiveLyrics = line.lyrics;
+  if (line.chords.length === 0 && isChordOnlyLine(line.lyrics)) {
+    effectiveChords = detectChordsInText(line.lyrics);
+    effectiveLyrics = ''; // No separate lyrics underneath — it's a chord-only line
+  }
+
+  if (effectiveChords.length === 0) {
     // Pure lyrics line
     if (line.lyrics.trim() === '') {
       return '<div class="ls-empty-line">&nbsp;</div>';
@@ -197,9 +208,9 @@ function renderChordLine(line: { chords: { chord: string; position: number }[]; 
 
   // Build chord line and lyric line
   // Chords are positioned above lyrics using their character offset
-  const chordChars: string[] = new Array(Math.max(line.lyrics.length, getMaxChordEnd(line.chords))).fill(' ');
+  const chordChars: string[] = new Array(Math.max(effectiveLyrics.length, getMaxChordEnd(effectiveChords))).fill(' ');
 
-  for (const cp of line.chords) {
+  for (const cp of effectiveChords) {
     const transposed = transposeChord(cp.chord, state.transposeSemitones, state.useFlats);
     for (let i = 0; i < transposed.length; i++) {
       if (cp.position + i < chordChars.length) {
@@ -211,7 +222,7 @@ function renderChordLine(line: { chords: { chord: string; position: number }[]; 
   }
 
   const chordStr = chordChars.join('').trimEnd();
-  const lyricsStr = line.lyrics;
+  const lyricsStr = effectiveLyrics;
 
   if (lyricsStr.trim() === '' || lyricsStr.trim() === chordStr.trim()) {
     // Chord-only line (no distinct lyrics underneath)

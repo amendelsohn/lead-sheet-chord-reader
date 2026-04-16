@@ -70,24 +70,23 @@ function parsePreElement(preEl: Element): SongLine[] {
   const htmlLines = preEl.innerHTML.split('\n');
 
   for (const htmlLine of htmlLines) {
-    const trimmed = htmlLine.trim();
+    // Preserve leading whitespace — chord/lyric alignment depends on it.
+    const plainText = stripHtml(htmlLine);
 
-    if (trimmed === '') {
+    if (plainText.trim() === '') {
       lines.push({ type: 'empty' });
       continue;
     }
 
     // Check for section header in <strong> tags
-    const strongMatch = trimmed.match(/<strong>\s*\[(.+?)\]\s*<\/strong>/i);
-    const plainText = stripHtml(trimmed);
+    const strongMatch = htmlLine.match(/<strong>\s*\[(.+?)\]\s*<\/strong>/i);
+    const sectionMatch = plainText.trim().match(/^\[(.+)\]$/);
 
-    // Also check plain text section headers
-    const sectionMatch = plainText.match(/^\[(.+)\]$/);
     if (strongMatch) {
       lines.push({ type: 'section-header', label: strongMatch[1] });
       // If there are also chords on this line after the header, parse those too
-      const afterHeader = trimmed.replace(/<strong>.*?<\/strong>/i, '').trim();
-      if (afterHeader && afterHeader.includes('data-chord')) {
+      const afterHeader = htmlLine.replace(/<strong>.*?<\/strong>/i, '');
+      if (afterHeader.includes('data-chord')) {
         const chords = extractChordPositions(afterHeader);
         const lyrics = stripHtml(afterHeader);
         if (chords.length > 0 || lyrics.trim()) {
@@ -96,23 +95,17 @@ function parsePreElement(preEl: Element): SongLine[] {
       }
       continue;
     }
-    if (sectionMatch && !trimmed.includes('data-chord')) {
+    if (sectionMatch && !htmlLine.includes('data-chord')) {
       lines.push({ type: 'section-header', label: sectionMatch[1] });
       continue;
     }
 
-    // Check for chords
-    if (trimmed.includes('data-chord')) {
-      const chords = extractChordPositions(trimmed);
-      const lyrics = stripHtml(trimmed);
-      lines.push({ type: 'chord-line', chords, lyrics });
+    // Chord or lyric line — preserve exact whitespace
+    if (htmlLine.includes('data-chord')) {
+      const chords = extractChordPositions(htmlLine);
+      lines.push({ type: 'chord-line', chords, lyrics: plainText });
     } else {
-      // Plain lyrics line
-      lines.push({
-        type: 'chord-line',
-        chords: [],
-        lyrics: plainText,
-      });
+      lines.push({ type: 'chord-line', chords: [], lyrics: plainText });
     }
   }
 
@@ -132,7 +125,12 @@ function extractChordPositions(htmlLine: string): ChordPosition[] {
       const el = node as HTMLElement;
       const chordName = el.getAttribute('data-chord');
       if (chordName) {
-        chords.push({ chord: chordName, position: textPos });
+        let fullChord = chordName;
+        const nextSib = el.nextSibling;
+        if (nextSib && nextSib.nodeType === Node.TEXT_NODE && (nextSib.textContent || '').startsWith('*')) {
+          fullChord += '*';
+        }
+        chords.push({ chord: fullChord, position: textPos });
         textPos += (el.textContent || '').length;
       } else {
         for (const child of el.childNodes) {

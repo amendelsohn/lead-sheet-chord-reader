@@ -48,8 +48,8 @@
 }
 
 .ls-reader.ls-dark {
-  background: #1a1a2e;
-  color: #e0e0e8;
+  background: #14171c;
+  color: #d4d7dc;
 }
 
 /* ---- Toolbar ---- */
@@ -66,8 +66,8 @@
 }
 
 .ls-dark .ls-toolbar {
-  background: #16162a;
-  border-bottom-color: #2a2a4e;
+  background: #1a1d23;
+  border-bottom-color: #2a2e36;
 }
 
 .ls-toolbar-left {
@@ -131,12 +131,12 @@
 }
 
 .ls-dark .ls-btn {
-  background: #2a2a4e;
-  border-color: #3a3a6e;
+  background: #2a2e36;
+  border-color: #3a3f48;
 }
 
 .ls-dark .ls-btn:hover {
-  background: #3a3a6e;
+  background: #3a3f48;
 }
 
 .ls-btn.ls-active {
@@ -146,8 +146,8 @@
 }
 
 .ls-dark .ls-btn.ls-active {
-  background: #6a6aff;
-  border-color: #6a6aff;
+  background: #5a7eb8;
+  border-color: #5a7eb8;
   color: #fff;
 }
 
@@ -193,11 +193,12 @@
   column-gap: 48px;
   column-rule: 1px solid #e0e0e0;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  font-variant-ligatures: none;
   line-height: 1.5;
 }
 
 .ls-dark .ls-columns {
-  column-rule-color: #2a2a4e;
+  column-rule-color: #2a2e36;
 }
 
 /* ---- Song Lines ---- */
@@ -209,14 +210,14 @@
 }
 
 .ls-chords {
-  color: #2563eb;
+  color: #3a5a8c;
   font-weight: 700;
   white-space: pre;
   user-select: all;
 }
 
 .ls-dark .ls-chords {
-  color: #818cf8;
+  color: #82a5d2;
 }
 
 .ls-lyrics {
@@ -261,7 +262,7 @@
 }
 
 .ls-dark .ls-content::-webkit-scrollbar-thumb {
-  background: #3a3a6e;
+  background: #3a3f48;
 }
 
 /* ---- Print ---- */

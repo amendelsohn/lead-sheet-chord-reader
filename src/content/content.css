@@ -26,10 +26,12 @@
   display: block;
 }
 
-#leadsheet-fab:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-  background: #2a2a4e;
+@media (hover: hover) {
+  #leadsheet-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    background: #2a2a4e;
+  }
 }
 
 /* LeadSheet Reader Overlay */
@@ -207,8 +209,10 @@
   white-space: nowrap;
 }
 
-.ls-btn:hover {
-  background: #e0e0e0;
+@media (hover: hover) {
+  .ls-btn:hover {
+    background: #e0e0e0;
+  }
 }
 
 .ls-btn:disabled {
@@ -252,20 +256,22 @@
  * Hovering anywhere in the group previews the swap by highlighting the
  * *inactive* half — as if saying "click to land here".
  */
-.ls-btn-group:hover > .ls-btn:not(.ls-active) {
-  background: #e0e0e0;
-}
+@media (hover: hover) {
+  .ls-btn-group:hover > .ls-btn:not(.ls-active) {
+    background: #e0e0e0;
+  }
 
-.ls-dark .ls-btn-group:hover > .ls-btn:not(.ls-active) {
-  background: #3a3f48;
-}
+  .ls-dark .ls-btn-group:hover > .ls-btn:not(.ls-active) {
+    background: #3a3f48;
+  }
 
-.ls-btn:disabled:hover {
-  background: #f0f0f0;
-}
+  .ls-btn:disabled:hover {
+    background: #f0f0f0;
+  }
 
-.ls-dark .ls-btn:disabled:hover {
-  background: #2a2e36;
+  .ls-dark .ls-btn:disabled:hover {
+    background: #2a2e36;
+  }
 }
 
 .ls-dark .ls-btn {
@@ -273,8 +279,10 @@
   border-color: #3a3f48;
 }
 
-.ls-dark .ls-btn:hover {
-  background: #3a3f48;
+@media (hover: hover) {
+  .ls-dark .ls-btn:hover {
+    background: #3a3f48;
+  }
 }
 
 .ls-btn.ls-active {
@@ -350,8 +358,10 @@
   line-height: 1.4;
 }
 
-.ls-select:hover {
-  background: #e0e0e0;
+@media (hover: hover) {
+  .ls-select:hover {
+    background: #e0e0e0;
+  }
 }
 
 .ls-dark .ls-select {
@@ -359,8 +369,10 @@
   border-color: #3a3f48;
 }
 
-.ls-dark .ls-select:hover {
-  background: #3a3f48;
+@media (hover: hover) {
+  .ls-dark .ls-select:hover {
+    background: #3a3f48;
+  }
 }
 
 .ls-dark .ls-select option {

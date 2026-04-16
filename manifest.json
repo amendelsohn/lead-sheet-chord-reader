@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LeadSheet Chord Reader",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Clean, distraction-free reader for chord sheets. Transpose, auto-scroll, dark mode, and print-friendly layout.",
   "icons": {
     "16": "icons/icon16.png",

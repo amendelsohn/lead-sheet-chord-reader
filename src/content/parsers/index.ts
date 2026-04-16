@@ -1,6 +1,7 @@
 import { SiteParser } from './types';
 import { ultimateGuitarParser } from './ug';
 import { eChordsParser } from './echords';
+import { cifraClubParser } from './cifraclub';
 
 /**
  * Registry of all supported chord sites. To add a new site:
@@ -8,7 +9,11 @@ import { eChordsParser } from './echords';
  *   2. Add it to this list
  *   3. Add the site's URL pattern to manifest.json → content_scripts.matches
  */
-export const PARSERS: readonly SiteParser[] = [ultimateGuitarParser, eChordsParser];
+export const PARSERS: readonly SiteParser[] = [
+  ultimateGuitarParser,
+  eChordsParser,
+  cifraClubParser,
+];
 
 /**
  * Find the parser whose hostname matches the current page. Matching is

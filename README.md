@@ -1,10 +1,10 @@
 # LeadSheet Chord Reader
 
-A Chrome extension that auto-activates on chord sites (Ultimate Guitar, E-Chords) and renders a clean, distraction-free chord sheet.
+A Chrome extension that auto-activates on chord sites (Ultimate Guitar, E-Chords, Cifra Club) and renders a clean, distraction-free chord sheet.
 
 ## Features
 
-- **Auto-activates** on Ultimate Guitar and E-Chords chord pages
+- **Auto-activates** on Ultimate Guitar, E-Chords, and Cifra Club chord pages
 - **Two layouts:** *Vertical* (one column, scroll down) or *Pages* (fills each column top-to-bottom, scroll right to reveal more columns)
 - **Transpose** up/down across a -11..+11 range, with the current key shown next to the number
 - **Sharps / flats** segmented toggle — flips accidental display even at transpose 0
@@ -57,7 +57,7 @@ npm run dev
 3. Enable **Developer mode** (toggle in top right)
 4. Click **Load unpacked**
 5. Select the `dist/` folder inside this project
-6. Navigate to any chord page on [Ultimate Guitar](https://tabs.ultimate-guitar.com) or [E-Chords](https://www.e-chords.com)
+6. Navigate to any chord page on [Ultimate Guitar](https://tabs.ultimate-guitar.com), [E-Chords](https://www.e-chords.com), or [Cifra Club](https://www.cifraclub.com)
 7. Click the ♪ button in the bottom-right corner to open the reader
 
 ### Test URLs
@@ -65,6 +65,7 @@ npm run dev
 - https://tabs.ultimate-guitar.com/tab/elton-john/can-you-feel-the-love-tonight-chords-519520
 - https://www.e-chords.com/chords/the-beatles/yesterday
 - https://tabs.ultimate-guitar.com/tab/the-animals/house-of-the-rising-sun-chords-65175
+- https://www.cifraclub.com/the-beatles/yesterday/
 
 ### After making changes
 
@@ -85,7 +86,8 @@ src/
 │       ├── index.ts            # Parser registry
 │       ├── enrich.ts           # Shared post-processor (Capo/Key/Tuning text scan)
 │       ├── ug.ts               # Ultimate Guitar parser
-│       └── echords.ts          # E-Chords parser
+│       ├── echords.ts          # E-Chords parser
+│       └── cifraclub.ts        # Cifra Club parser
 ├── reader/
 │   ├── reader.ts               # Entry — createReaderView, applyState, close
 │   ├── state.ts                # ReaderState + chrome.storage prefs
@@ -109,6 +111,7 @@ src/
 |------|---------------|
 | Ultimate Guitar | `<span data-name="Am">` in `<pre>` |
 | E-Chords | `<span data-chord="Am">` in any `<pre>` |
+| Cifra Club | `<b>Am</b>` in `<pre>` inside `<div id="cifra">` |
 
 ### Adding a new site
 

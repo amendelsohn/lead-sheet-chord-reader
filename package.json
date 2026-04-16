@@ -1,6 +1,6 @@
 {
   "name": "lead-sheet-chord-reader",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Clean chord reader for Ultimate Guitar and E-Chords",
   "private": true,
   "type": "module",

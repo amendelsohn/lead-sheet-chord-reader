@@ -569,6 +569,39 @@
   background: #3a3f48;
 }
 
+/* ---- Touch devices ----
+ * Coarse pointers (touch screens) need bigger hit areas than desktop defaults.
+ * iOS HIG recommends ≥44px, Material ≥48px. Desktop (fine pointer) layout is
+ * unchanged — these rules only apply when pointer: coarse.
+ *
+ * The FAB (56px) is already touch-sized and intentionally left alone.
+ * The toolbar overflow logic (updateToolbarOverflow) is width-based and will
+ * naturally push more controls into the hamburger as buttons grow — that's
+ * the intended behavior on mobile.
+ */
+@media (pointer: coarse) {
+  .ls-btn {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .ls-close,
+  #ls-overflow-toggle {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .ls-select {
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  .ls-value {
+    font-size: 15px;
+  }
+}
+
 /* ---- Print ---- */
 @media print {
   .ls-toolbar {

@@ -9,6 +9,14 @@ import { ChordPosition } from '../content/parsers/types';
 const CHORD_TOKEN_RE = /^[A-G][#b]?(?:maj|min|m|M|sus|dim|aug|add|°|ø|Δ|[\d#b+\-()])*(?:\/[A-G][#b]?)?\*?$/;
 
 /**
+ * True if `token` looks like a chord name (no surrounding whitespace).
+ * Useful for parsers that embed chords inline, e.g., AZChords' `(F)` syntax.
+ */
+export function isChordToken(token: string): boolean {
+  return CHORD_TOKEN_RE.test(token);
+}
+
+/**
  * A line is considered "chord-only" if every whitespace-separated token
  * looks like a chord (and the line has at least one token).
  *

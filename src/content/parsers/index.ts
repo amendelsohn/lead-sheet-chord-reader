@@ -2,6 +2,8 @@ import { SiteParser } from './types';
 import { ultimateGuitarParser } from './ug';
 import { eChordsParser } from './echords';
 import { cifraClubParser } from './cifraclub';
+import { azChordsParser } from './azchords';
+import { ukuTabsParser } from './ukutabs';
 
 /**
  * Registry of all supported chord sites. To add a new site:
@@ -13,6 +15,8 @@ export const PARSERS: readonly SiteParser[] = [
   ultimateGuitarParser,
   eChordsParser,
   cifraClubParser,
+  azChordsParser,
+  ukuTabsParser,
 ];
 
 /**

@@ -14,7 +14,9 @@
         "*://tabs.ultimate-guitar.com/tab/*",
         "*://www.e-chords.com/chords/*/*",
         "*://*.cifraclub.com/*",
-        "*://*.cifraclub.com.br/*"
+        "*://*.cifraclub.com.br/*",
+        "*://*.azchords.com/*",
+        "*://*.ukutabs.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"

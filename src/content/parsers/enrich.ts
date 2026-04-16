@@ -25,7 +25,7 @@ export function enrichFromLines(song: ParsedSong): ParsedSong {
     const text = line.lyrics.trim();
 
     // Capo: 3  |  Capo: 3rd fret  |  Capo 3
-    const capoMatch = text.match(/^capo[:\s]+\s*(\d+)/i);
+    const capoMatch = text.match(/^capo\s*[:\s]\s*(\d+)/i);
     if (capoMatch && (updated.capo === undefined || updated.capo === 0)) {
       updated.capo = parseInt(capoMatch[1], 10);
       lines[i] = { type: 'empty' };

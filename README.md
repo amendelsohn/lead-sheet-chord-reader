@@ -5,12 +5,15 @@ A Chrome extension that auto-activates on chord sites (Ultimate Guitar, E-Chords
 ## Features
 
 - **Auto-activates** on Ultimate Guitar and E-Chords chord pages
-- **Multi-column layout** (1, 2, or 3 columns) — no scrolling while playing
-- **Transpose** up/down with sharps/flats toggle
-- **Auto-scroll** with adjustable speed — hands-free while playing
-- **Dark mode** — respects system preference, togglable
+- **Two layouts:** *Vertical* (one column, scroll down) or *Pages* (fills each column top-to-bottom, scroll right to reveal more columns)
+- **Transpose** up/down across a -11..+11 range, with the current key shown next to the number
+- **Sharps / flats** segmented toggle — flips accidental display even at transpose 0
+- **Auto-scroll** with adjustable speed (0.2–3.0) — follows vertical or horizontal axis depending on layout
+- **Light / dark theme** — defaults to system preference, togglable
 - **Font size** control
 - **Keyboard shortcuts** for everything
+- **Responsive toolbar** — least-important controls collapse into a hamburger menu on narrow windows
+- **Shadow DOM isolation** — reader styles don't leak into the host page and vice versa
 - **Print-friendly** — Ctrl+P prints just the chord sheet
 
 ## Keyboard Shortcuts (when reader is open)
@@ -75,24 +78,45 @@ npm run dev
 ```
 src/
 ├── content/
-│   ├── main.ts              # Content script entry point
-│   ├── content.css           # FAB + reader styles
+│   ├── main.ts                 # Content script entry — registry dispatch, observer
+│   ├── content.css             # Reader styles (bundled into the Shadow DOM)
 │   └── parsers/
-│       ├── types.ts          # ParsedSong data model
-│       ├── ug.ts             # Ultimate Guitar DOM parser
-│       └── echords.ts        # E-Chords DOM parser
+│       ├── types.ts            # ParsedSong / SiteParser interfaces
+│       ├── index.ts            # Parser registry
+│       ├── enrich.ts           # Shared post-processor (Capo/Key/Tuning text scan)
+│       ├── ug.ts               # Ultimate Guitar parser
+│       └── echords.ts          # E-Chords parser
 ├── reader/
-│   └── reader.ts             # Reader view UI + controls
-└── shared/
-    └── transpose.ts          # Chord transposition logic
+│   ├── reader.ts               # Entry — createReaderView, applyState, close
+│   ├── state.ts                # ReaderState + chrome.storage prefs
+│   ├── toolbar.ts              # HTML template, events, overflow menu
+│   ├── song-view.ts            # Song renderer (chord / lyric / inline / group)
+│   ├── scroll.ts               # Auto-scroll, page scroll, column separators
+│   ├── keyboard.ts             # Keyboard shortcut dispatch
+│   ├── shadow.ts               # Shadow DOM host / root
+│   └── dom.ts                  # getEl / setRoot helper
+├── shared/
+│   ├── transpose.ts            # Chord transposition
+│   ├── chord-detect.ts         # Regex chord-token detector
+│   ├── storage.ts              # chrome.storage.local wrapper
+│   └── html.ts                 # Tagged-template HTML builder
+└── types.d.ts                  # Ambient types (CSS-as-text import)
 ```
 
 ## Supported Sites
 
-| Site | Status | How it parses |
-|------|--------|---------------|
-| Ultimate Guitar | ✅ | `<span data-name="Am">` in `<pre>` |
-| E-Chords | ✅ | `<span data-chord="Am">` in `<pre class="pre-columns">` |
+| Site | How it parses |
+|------|---------------|
+| Ultimate Guitar | `<span data-name="Am">` in `<pre>` |
+| E-Chords | `<span data-chord="Am">` in any `<pre>` |
+
+### Adding a new site
+
+1. Create a parser file in `src/content/parsers/` exporting a `SiteParser`
+2. Register it in `src/content/parsers/index.ts`
+3. Add the URL pattern to `manifest.json → content_scripts.matches`
+
+See `src/content/parsers/types.ts` for the `SiteParser` interface.
 
 ## License
 

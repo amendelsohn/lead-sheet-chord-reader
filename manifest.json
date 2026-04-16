@@ -12,7 +12,6 @@
     {
       "matches": [
         "*://tabs.ultimate-guitar.com/tab/*",
-        "*://www.ultimate-guitar.com/tab/*",
         "*://www.e-chords.com/chords/*/*"
       ],
       "js": ["content.js"],

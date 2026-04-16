@@ -84,25 +84,21 @@ function extractArtist(): string {
 function extractMetadata(): { key?: string; capo?: number; tuning?: string } {
   const result: { key?: string; capo?: number; tuning?: string } = {};
 
-  // Look for metadata spans near the chord content
+  // UG labels key/capo/tuning with plain "<span>Key:</span><span>…</span>"
+  // pairs. We don't have a reliable container selector, but we can short-
+  // circuit once all three fields are populated so we stop early on long pages.
   const allSpans = document.querySelectorAll('span');
   for (const span of allSpans) {
+    if (result.key && result.capo !== undefined && result.tuning) break;
     const text = span.textContent?.trim() || '';
-    if (text === 'Key:') {
-      const next = span.nextElementSibling;
-      if (next) result.key = next.textContent?.trim();
-    }
-    if (text === 'Capo:') {
-      const next = span.nextElementSibling;
-      if (next) {
-        const capoText = next.textContent?.trim() || '';
-        const match = capoText.match(/(\d+)/);
-        if (match) result.capo = parseInt(match[1], 10);
-      }
-    }
-    if (text === 'Tuning:') {
-      const next = span.nextElementSibling;
-      if (next) result.tuning = next.textContent?.trim();
+    if (!result.key && text === 'Key:') {
+      result.key = span.nextElementSibling?.textContent?.trim() || undefined;
+    } else if (result.capo === undefined && text === 'Capo:') {
+      const capoText = span.nextElementSibling?.textContent?.trim() || '';
+      const match = capoText.match(/(\d+)/);
+      if (match) result.capo = parseInt(match[1], 10);
+    } else if (!result.tuning && text === 'Tuning:') {
+      result.tuning = span.nextElementSibling?.textContent?.trim() || undefined;
     }
   }
 
@@ -143,22 +139,10 @@ function parseContent(preEl: Element): SongLine[] {
       continue;
     }
 
-    // Check if line contains chord spans (UG or E-Chords markup)
-    const hasUgChords = /data-name="[^"]+"/.test(htmlLine);
-    const hasEChords = /data-chord="[^"]+"/.test(htmlLine);
-
-    if (hasUgChords) {
-      const chords = extractChordPositions(htmlLine);
+    if (/data-name="[^"]+"/.test(htmlLine)) {
       lines.push({
         type: 'chord-line',
-        chords,
-        lyrics: plainText,
-      });
-    } else if (hasEChords) {
-      const chords = extractChordPositionsEChords(htmlLine);
-      lines.push({
-        type: 'chord-line',
-        chords,
+        chords: extractChordPositions(htmlLine),
         lyrics: plainText,
       });
     } else {
@@ -201,41 +185,6 @@ function extractChordPositions(htmlLine: string): ChordPosition[] {
         let fullChord = chordName;
         // If the next sibling text starts with '*', treat it as an alt-fingering marker
         // that belongs to this chord (common convention, e.g., "F*" for alternate F voicing)
-        const nextSib = el.nextSibling;
-        if (nextSib && nextSib.nodeType === Node.TEXT_NODE && (nextSib.textContent || '').startsWith('*')) {
-          fullChord += '*';
-        }
-        chords.push({ chord: fullChord, position: textPos });
-        textPos += (el.textContent || '').length;
-      } else {
-        for (const child of el.childNodes) {
-          walk(child);
-        }
-      }
-    }
-  }
-
-  for (const child of tempDiv.childNodes) {
-    walk(child);
-  }
-
-  return chords;
-}
-
-function extractChordPositionsEChords(htmlLine: string): ChordPosition[] {
-  const chords: ChordPosition[] = [];
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = htmlLine;
-
-  let textPos = 0;
-  function walk(node: Node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      textPos += (node.textContent || '').length;
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const chordName = el.getAttribute('data-chord');
-      if (chordName) {
-        let fullChord = chordName;
         const nextSib = el.nextSibling;
         if (nextSib && nextSib.nodeType === Node.TEXT_NODE && (nextSib.textContent || '').startsWith('*')) {
           fullChord += '*';

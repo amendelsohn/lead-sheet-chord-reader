@@ -38,10 +38,12 @@ export function attachKeyboard(onChange: () => void, onClose: () => void): void 
       case '=':
         state.fontSize = Math.min(28, state.fontSize + 1);
         onChange();
+        savePreferences();
         break;
       case '-':
         state.fontSize = Math.max(10, state.fontSize - 1);
         onChange();
+        savePreferences();
         break;
       case 'v':
         state.layout = 'vertical';
@@ -63,10 +65,12 @@ export function attachKeyboard(onChange: () => void, onClose: () => void): void 
       case 'd':
         state.darkMode = !state.darkMode;
         onChange();
+        savePreferences();
         break;
       case 'b':
         state.useFlats = !state.useFlats;
         onChange();
+        savePreferences();
         break;
       case 'ArrowLeft':
       case 'PageUp':

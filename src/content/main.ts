@@ -1,6 +1,6 @@
 import { getParserForCurrentSite, SiteParser } from './parsers';
 import { ParsedSong } from './parsers/types';
-import { createReaderView, isReaderOpen } from '../reader/reader';
+import { createReaderView, forceCloseReader, isReaderOpen } from '../reader/reader';
 import { getShadowRoot } from '../reader/shadow';
 import { preloadPrefs } from '../shared/storage';
 
@@ -80,8 +80,10 @@ function openReader(song: ParsedSong) {
 }
 
 function handleReaderClose() {
-  // Remember the user closed it for this URL this session
+  // Remember the user closed it for this URL this session and clear the
+  // dedupe key so a later re-open (via FAB or nav back) can re-process.
   sessionStorage.setItem('leadsheet-dismissed', window.location.href);
+  lastProcessedUrl = null;
   injectFAB();
 }
 
@@ -123,19 +125,45 @@ function stopObserver() {
   }
 }
 
+let urlChangeTimer: number | null = null;
 function handleUrlChange() {
-  // Reset state on navigation
+  // A new page almost certainly means a different song. Close any existing
+  // reader so the user doesn't see the previous song while the new one loads.
+  forceCloseReader();
+
   lastProcessedUrl = null;
-  // Give the SPA time to render, then process
-  setTimeout(() => startObserver(), 100);
+
+  // Give the SPA time to render, then process. Debounce rapid nav so we
+  // don't stack timers on every history push.
+  if (urlChangeTimer !== null) clearTimeout(urlChangeTimer);
+  urlChangeTimer = window.setTimeout(() => {
+    urlChangeTimer = null;
+    startObserver();
+  }, 100);
 }
 
 /**
  * SPA navigation detection — patches history API and listens for popstate.
  * Necessary because UG uses client-side routing; the content script only
  * loads on initial page load, not on subsequent navigations.
+ *
+ * Guarded against double-invocation — if the content script is re-injected
+ * (e.g. BFCache restore) we'd otherwise wrap the history APIs repeatedly
+ * and dispatch N events per navigation.
  */
+interface LeadSheetWindow extends Window {
+  __leadsheet_urlWatch?: boolean;
+}
 function watchUrlChanges() {
+  const w = window as LeadSheetWindow;
+  if (w.__leadsheet_urlWatch) {
+    // Still bind the handler — a freshly injected script still needs to hear
+    // the events, which are dispatched off the already-wrapped history API.
+    window.addEventListener('leadsheet:urlchange', handleUrlChange);
+    return;
+  }
+  w.__leadsheet_urlWatch = true;
+
   const origPushState = history.pushState;
   const origReplaceState = history.replaceState;
 

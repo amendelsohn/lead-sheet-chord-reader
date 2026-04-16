@@ -1,6 +1,11 @@
 # LeadSheet Chord Reader — Product Spec
 
 > Status: v0.1 (April 2026)
+>
+> **Note:** This is the original product spec written before implementation.
+> Some details (column layout, data model, file structure) have evolved. For
+> the current shape of the code, see `README.md` and the inline docs in
+> `src/content/parsers/types.ts`. Kept here for historical intent.
 
 ## One-Liner
 

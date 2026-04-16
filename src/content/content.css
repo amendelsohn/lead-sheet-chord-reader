@@ -3,7 +3,6 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 2147483647;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -18,6 +17,9 @@
   align-items: center;
   justify-content: center;
   font-family: serif;
+  /* Host element is pointer-events: none (see shadow.ts) so the host page
+     remains interactive — re-enable here for our own interactive elements. */
+  pointer-events: auto;
 }
 
 #leadsheet-fab:hover {
@@ -33,8 +35,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2147483646;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  pointer-events: auto;
 }
 
 /* ---- Reader Container ---- */

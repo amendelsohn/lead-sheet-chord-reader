@@ -78,8 +78,14 @@ export function loadPreferences(state: ReaderState, onAsyncLoad?: () => void): v
     applyPrefs(state, cached);
     return;
   }
-  preloadPrefs().then((prefs) => {
-    applyPrefs(state, prefs);
-    onAsyncLoad?.();
-  });
+  preloadPrefs()
+    .then((prefs) => {
+      applyPrefs(state, prefs);
+      onAsyncLoad?.();
+    })
+    .catch(() => {
+      // preloadPrefs already resolves with {} on error today, but keep an
+      // explicit catch so a future rejection can't hang the caller waiting
+      // on a one-time pref-applied callback.
+    });
 }

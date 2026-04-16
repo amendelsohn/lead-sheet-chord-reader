@@ -6,6 +6,7 @@ import { initState, clearState, getState, ReaderOptions } from './state';
 import {
   buildToolbarHTML,
   bindToolbarEvents,
+  unbindToolbarEvents,
   syncToolbarToState,
   updateToolbarOverflow,
   scheduleToolbarUpdate,
@@ -23,6 +24,16 @@ export { ReaderOptions } from './state';
 
 export function isReaderOpen(): boolean {
   return getEl('leadsheet-overlay') !== null;
+}
+
+/**
+ * Close the reader from outside the toolbar event path (e.g. when the page
+ * navigates to a different song in an SPA). Safe to call when the reader
+ * isn't open.
+ */
+export function forceCloseReader(): void {
+  if (!isReaderOpen()) return;
+  closeReader();
 }
 
 export function createReaderView(song: ParsedSong, options: ReaderOptions = {}): void {
@@ -107,6 +118,7 @@ function buildOverlayHTML() {
 function closeReader(): void {
   stopAutoScroll();
   detachKeyboard();
+  unbindToolbarEvents();
   window.removeEventListener('resize', scheduleSeparatorUpdate);
   window.removeEventListener('resize', scheduleToolbarUpdate);
 

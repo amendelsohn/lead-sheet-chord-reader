@@ -6,6 +6,8 @@ import {
   nextSpeedUp,
   nextSpeedDown,
   transposeStep,
+  SCROLL_MIN,
+  SCROLL_MAX,
 } from './scroll';
 import { html, HtmlString } from '../shared/html';
 
@@ -169,14 +171,25 @@ export function bindToolbarEvents(onChange: () => void, onClose: () => void): vo
   // Outside-click close. composedPath() crosses shadow-DOM boundaries so
   // the check works whether the click hit our shadow content (retargeted
   // at the shadow host from document's perspective) or the host page.
-  document.addEventListener('click', (e) => {
+  outsideClickHandler = (e: MouseEvent) => {
     if (!overflowPanel.classList.contains('ls-open')) return;
     const path = e.composedPath();
     if (path.includes(overflowPanel)) return;
     if (path.includes(overflowToggle)) return;
     overflowPanel.classList.remove('ls-open');
     overflowToggle.classList.remove('ls-active');
-  });
+  };
+  document.addEventListener('click', outsideClickHandler);
+}
+
+let outsideClickHandler: ((e: MouseEvent) => void) | null = null;
+
+/** Remove document-level listeners registered by bindToolbarEvents. */
+export function unbindToolbarEvents(): void {
+  if (outsideClickHandler) {
+    document.removeEventListener('click', outsideClickHandler);
+    outsideClickHandler = null;
+  }
 }
 
 /**
@@ -202,9 +215,9 @@ export function syncToolbarToState(): void {
   const speedEl = getEl('ls-scroll-speed');
   if (speedEl) speedEl.textContent = state.autoScrollSpeed.toFixed(1);
   const slower = getEl<HTMLButtonElement>('ls-scroll-slower');
-  if (slower) slower.disabled = state.autoScrollSpeed <= 0.2;
+  if (slower) slower.disabled = state.autoScrollSpeed <= SCROLL_MIN;
   const faster = getEl<HTMLButtonElement>('ls-scroll-faster');
-  if (faster) faster.disabled = state.autoScrollSpeed >= 3.0;
+  if (faster) faster.disabled = state.autoScrollSpeed >= SCROLL_MAX;
 
   // Layout active state
   getEl('ls-layout-vertical')?.classList.toggle('ls-active', state.layout === 'vertical');

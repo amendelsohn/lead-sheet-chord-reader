@@ -21,10 +21,16 @@ export function getShadowRoot(): ShadowRoot {
 
   shadowHost = document.createElement('div');
   shadowHost.id = 'leadsheet-shadow-host';
-  // Reset any inherited styling so the host div doesn't itself influence
-  // layout of the page. Children inside the shadow root are fully isolated
-  // anyway, but the host div still participates in the host page's layout.
-  shadowHost.style.all = 'initial';
+  // The host element is the only part of our UI that exists in the host
+  // page's layout. Pin it to the viewport so it never perturbs page reflow,
+  // and make it pointer-transparent by default — the overlay and FAB inside
+  // the shadow root re-enable pointer events as needed.
+  Object.assign(shadowHost.style, {
+    position: 'fixed',
+    inset: '0',
+    pointerEvents: 'none',
+    zIndex: '2147483647',
+  });
 
   shadowRoot = shadowHost.attachShadow({ mode: 'open' });
 

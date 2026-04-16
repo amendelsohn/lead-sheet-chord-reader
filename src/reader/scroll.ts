@@ -8,8 +8,6 @@ import { getState } from './state';
 // ---- Auto-scroll ----
 
 export function startAutoScroll(): void {
-  const content = getEl('ls-content');
-  if (!content) return;
   const state = getState();
 
   // Browsers round scrollTop/scrollLeft to integer pixels, so sub-1 speeds
@@ -18,14 +16,18 @@ export function startAutoScroll(): void {
   let accumulator = 0;
 
   function scroll() {
+    // Re-resolve the content element each frame — the reader may have been
+    // closed between frames, in which case getEl returns null.
+    const content = getEl('ls-content');
+    if (!content) return;
     const s = getState();
     accumulator += s.autoScrollSpeed;
     const whole = Math.floor(accumulator);
     if (whole > 0) {
       if (s.layout === 'horizontal') {
-        content!.scrollLeft += whole;
+        content.scrollLeft += whole;
       } else {
-        content!.scrollTop += whole;
+        content.scrollTop += whole;
       }
       accumulator -= whole;
     }
@@ -116,9 +118,9 @@ export function scheduleSeparatorUpdate(): void {
 
 // ---- Speed / transpose step helpers ----
 
-const SCROLL_STEP = 0.2;
-const SCROLL_MIN = 0.2;
-const SCROLL_MAX = 3.0;
+export const SCROLL_STEP = 0.2;
+export const SCROLL_MIN = 0.2;
+export const SCROLL_MAX = 3.0;
 
 export function nextSpeedUp(current: number): number {
   return Math.min(SCROLL_MAX, +(current + SCROLL_STEP).toFixed(1));

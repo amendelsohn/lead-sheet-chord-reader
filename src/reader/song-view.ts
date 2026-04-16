@@ -92,19 +92,31 @@ function renderChordLine(line: {
   // Traditional chord-over-lyric rendering. Build the chord line by placing
   // each transposed chord at its character offset. Lyrics below preserve
   // exact whitespace so alignment holds.
+  // Transposed chord names can be longer than the original (e.g. F → Gb),
+  // so we sort by position and enforce at least one space between adjacent
+  // chords. Without this, "F    Am" transposed down a semitone would render
+  // as "EAbm" — the Gb-ified chord eats the whitespace separator.
+  const sortedChords = [...effectiveChords]
+    .map((cp) => ({
+      text: transposeChord(cp.chord, state.transposeSemitones, state.useFlats),
+      position: cp.position,
+    }))
+    .sort((a, b) => a.position - b.position);
+
+  let cursor = 0;
   const chordChars: string[] = new Array(
     Math.max(effectiveLyrics.length, maxChordEnd(effectiveChords))
   ).fill(' ');
 
-  for (const cp of effectiveChords) {
-    const transposed = transposeChord(cp.chord, state.transposeSemitones, state.useFlats);
-    for (let i = 0; i < transposed.length; i++) {
-      if (cp.position + i < chordChars.length) {
-        chordChars[cp.position + i] = transposed[i];
-      } else {
-        chordChars.push(transposed[i]);
-      }
+  for (const cp of sortedChords) {
+    // Never place a chord before where the previous chord ended (+1 space).
+    const start = Math.max(cp.position, cursor);
+    for (let i = 0; i < cp.text.length; i++) {
+      const idx = start + i;
+      if (idx < chordChars.length) chordChars[idx] = cp.text[i];
+      else chordChars.push(cp.text[i]);
     }
+    cursor = start + cp.text.length + 1;
   }
 
   const chordStr = chordChars.join('').trimEnd();

@@ -2,7 +2,13 @@
   "manifest_version": 3,
   "name": "LeadSheet Chord Reader",
   "version": "1.0.0",
-  "description": "Clean, distraction-free reader for chord sheets. Transpose, auto-scroll, dark mode, and print-friendly layout.",
+  "author": "andrew@mendelsohnlabs.com",
+  "description": "Clean, distraction-free reader for chord sheets. Transpose, auto-scroll, and multiple color themes.",
+  "homepage_url": "https://github.com/amendelsohn/lead-sheet-chord-reader",
+  "developer": {
+    "name": "Andrew Mendelsohn",
+    "url": "https://github.com/amendelsohn/lead-sheet-chord-reader"
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

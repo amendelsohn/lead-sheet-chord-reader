@@ -1,137 +1,92 @@
 # LeadSheet Chord Reader
 
-A Chrome extension that renders chord sheets in a clean, distraction-free reading layout. Parses the existing page content client-side — no scraping, no network calls.
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/andrewmendelsohn)
 
-Currently compatible with Ultimate Guitar®, E-Chords, Cifra Club, AZChords, UkuTabs, and Chordie (trademarks of their respective owners; this project is not affiliated with or endorsed by any of them).
+A browser extension that turns chord sheet pages into a clean, distraction-free reader. Parses the existing page content client-side — no scraping, no network calls, no account required.
+
+<p align="center">
+  <img src="store/screenshots/desktop-dark.png" alt="Desktop dark theme — Pages layout" width="720">
+</p>
+
+<p align="center">
+  <img src="store/screenshots/desktop-sepia.png" alt="Desktop sepia theme — Pages layout" width="720">
+</p>
 
 ## Features
 
-- **Auto-activates** on supported chord sheet pages
-- **Two layouts:** *Vertical* (one column, scroll down) or *Pages* (fills each column top-to-bottom, scroll right to reveal more columns)
-- **Transpose** up/down across a -11..+11 range, with the current key shown next to the number
-- **Sharps / flats** segmented toggle — flips accidental display even at transpose 0
-- **Auto-scroll** with adjustable speed (0.2–3.0) — follows vertical or horizontal axis depending on layout
-- **Light / dark theme** — defaults to system preference, togglable
-- **Font size** control
+- **Transpose** up or down to any key, with sharps/flats toggle
+- **Auto-scroll** at adjustable speed — hands-free practice
+- **Multiple color themes** — Nord, Dracula, Solarized, Sepia, and more
+- **Two layouts** — Vertical (scroll down) or Pages (columns, scroll right)
 - **Keyboard shortcuts** for everything
-- **Responsive toolbar** — least-important controls collapse into a hamburger menu on narrow windows
-- **Shadow DOM isolation** — reader styles don't leak into the host page and vice versa
-- **Print-friendly** — Ctrl+P prints just the chord sheet
+- **Responsive toolbar** — collapses into a hamburger menu on narrow screens
+- **Works on mobile** — Firefox for Android supported
 
-## Keyboard Shortcuts (when reader is open)
+<p align="center">
+  <img src="store/screenshots/mobile-dark.png" alt="Mobile dark theme" width="300">
+</p>
+
+## Supported Sites
+
+- [Ultimate Guitar](https://tabs.ultimate-guitar.com) (tabs.ultimate-guitar.com)
+- [E-Chords](https://www.e-chords.com) (e-chords.com)
+- [Cifra Club](https://www.cifraclub.com) (cifraclub.com)
+- [AZChords](https://www.azchords.com) (azchords.com)
+- [UkuTabs](https://ukutabs.com) (ukutabs.com)
+- [Chordie](https://www.chordie.com) (chordie.com)
+
+## Install
+
+**Chrome / Edge:** [Chrome Web Store](#) (coming soon)
+
+**Firefox / Firefox Android:** [Firefox Add-ons](#) (coming soon)
+
+### From source
+
+```bash
+npm install
+npm run build          # Chrome → dist/
+npm run build:firefox  # Firefox → dist-firefox/
+```
+
+- **Chrome/Edge:** `chrome://extensions/` → Developer mode → Load unpacked → select `dist/`
+- **Firefox:** `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → select `dist-firefox/manifest.json`
+
+## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `Esc` | Close reader |
 | `↑` / `↓` | Transpose up/down |
-| `←` / `→` / `PgUp` / `PgDn` | Page scroll (vertical: scroll by screen height with overlap; horizontal: one column) |
+| `←` / `→` / `PgUp` / `PgDn` | Page scroll |
 | `+` / `-` | Font size up/down |
-| `v` | Vertical layout (single column, scroll down) |
-| `h` | Horizontal layout (page view, scroll across) |
+| `v` | Vertical layout |
+| `h` | Horizontal / Pages layout |
 | `Space` | Toggle auto-scroll |
-| `d` | Toggle dark mode |
 | `b` | Toggle flats/sharps |
 
-## Development Setup
+## Privacy
 
-### Prerequisites
+No tracking, no analytics, no accounts, no network requests. The extension reads the chord page you already have open and renders it locally. Your preferences are stored in your browser via `chrome.storage.local` and never leave your device.
 
-- Node.js 18+
-- Chrome browser
+[Full privacy policy](docs/PRIVACY.md)
 
-### Build
+## Contributing
 
-```bash
-# Install dependencies
-npm install
-
-# Build the extension
-npm run build
-
-# Watch mode (rebuilds on file changes)
-npm run dev
-```
-
-### Load in Chrome
-
-1. Run `npm run build`
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable **Developer mode** (toggle in top right)
-4. Click **Load unpacked**
-5. Select the `dist/` folder inside this project
-6. Navigate to any chord page on [Ultimate Guitar](https://tabs.ultimate-guitar.com), [E-Chords](https://www.e-chords.com), [Cifra Club](https://www.cifraclub.com), [AZChords](https://www.azchords.com), [UkuTabs](https://ukutabs.com), or [Chordie](https://www.chordie.com)
-7. Click the ♪ button in the bottom-right corner to open the reader
-
-### Test URLs
-
-- https://tabs.ultimate-guitar.com/tab/elton-john/can-you-feel-the-love-tonight-chords-519520
-- https://www.e-chords.com/chords/the-beatles/yesterday
-- https://tabs.ultimate-guitar.com/tab/the-animals/house-of-the-rising-sun-chords-65175
-- https://www.cifraclub.com/the-beatles/yesterday/
-- https://www.azchords.com/b/beatles-tabs-410/yesterday-tabs-101080.html
-- https://ukutabs.com/t/the-beatles/yesterday/
-- https://www.chordie.com/chord.pere/www.guitartabs.cc/tabs/j/jars_of_clay/amazing_grace_crd_ver_2.html
-
-### After making changes
-
-1. Run `npm run build` (or have `npm run dev` running)
-2. Go to `chrome://extensions/`
-3. Click the refresh icon on the LeadSheet extension card
-4. Reload the chord page
-
-## Project Structure
-
-```
-src/
-├── content/
-│   ├── main.ts                 # Content script entry — registry dispatch, observer
-│   ├── content.css             # Reader styles (bundled into the Shadow DOM)
-│   └── parsers/
-│       ├── types.ts            # ParsedSong / SiteParser interfaces
-│       ├── index.ts            # Parser registry
-│       ├── enrich.ts           # Shared post-processor (Capo/Key/Tuning text scan)
-│       ├── ug.ts               # Ultimate Guitar parser
-│       ├── echords.ts          # E-Chords parser
-│       ├── cifraclub.ts        # Cifra Club parser
-│       ├── azchords.ts         # AZChords parser
-│       ├── ukutabs.ts          # UkuTabs parser
-│       └── chordie.ts          # Chordie parser
-├── reader/
-│   ├── reader.ts               # Entry — createReaderView, applyState, close
-│   ├── state.ts                # ReaderState + chrome.storage prefs
-│   ├── toolbar.ts              # HTML template, events, overflow menu
-│   ├── song-view.ts            # Song renderer (chord / lyric / inline / group)
-│   ├── scroll.ts               # Auto-scroll, page scroll, column separators
-│   ├── keyboard.ts             # Keyboard shortcut dispatch
-│   ├── shadow.ts               # Shadow DOM host / root
-│   └── dom.ts                  # getEl / setRoot helper
-├── shared/
-│   ├── transpose.ts            # Chord transposition
-│   ├── chord-detect.ts         # Regex chord-token detector
-│   ├── storage.ts              # chrome.storage.local wrapper
-│   └── html.ts                 # Tagged-template HTML builder
-└── types.d.ts                  # Ambient types (CSS-as-text import)
-```
-
-## Supported Sites
-
-| Site | How it parses |
-|------|---------------|
-| Ultimate Guitar | `<span data-name="Am">` in `<pre>` |
-| E-Chords | `<span data-chord="Am">` in any `<pre>` |
-| Cifra Club | `<b>Am</b>` in `<pre>` inside `<div id="cifra">` |
-| AZChords | Plain-text `<pre id="content">` — inline `(Am)` or chord-over-lyric |
-| UkuTabs | `<a class="ukutabschord">` in `<pre id="ukutabs-song">` |
-| Chordie | `.chordline` / `.textline` divs with `span.absc` chord markers |
+Contributions welcome! The extension is TypeScript with no framework — just esbuild for bundling and Shadow DOM for isolation.
 
 ### Adding a new site
 
-1. Create a parser file in `src/content/parsers/` exporting a `SiteParser`
+1. Create a parser in `src/content/parsers/` implementing the `SiteParser` interface
 2. Register it in `src/content/parsers/index.ts`
-3. Add the URL pattern to `manifest.json → content_scripts.matches`
+3. Add URL patterns to both `manifest.json` and `manifest.firefox.json`
 
-See `src/content/parsers/types.ts` for the `SiteParser` interface.
+See [CLAUDE.md](CLAUDE.md) for architecture details.
 
 ## License
 
 MIT
+
+## Author
+
+Andrew Mendelsohn — [Mendelsohn Labs LLC](https://ko-fi.com/andrewmendelsohn)

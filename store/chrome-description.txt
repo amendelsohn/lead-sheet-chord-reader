@@ -1,0 +1,28 @@
+LeadSheet Chord Reader gives you a clean, distraction-free view of any chord sheet. One click opens a focused overlay right on top of the page — no copying, no switching tabs.
+
+FEATURES
+- Transpose up or down to any key
+- Auto-scroll at adjustable speed — hands-free practice
+- Multiple color themes (Nord, Dracula, Solarized, and more)
+- Capo, key, and tuning info displayed in the header
+- Keyboard shortcuts for everything
+
+WORKS WITH
+- Ultimate Guitar (tabs.ultimate-guitar.com)
+- E-Chords (e-chords.com)
+- CifraClub (cifraclub.com)
+- AZChords (azchords.com)
+- UkuTabs (ukutabs.com)
+- Chordie (chordie.com)
+- More sites coming soon
+
+HOW IT WORKS
+Navigate to a chord page on any supported site. A floating button appears in the corner — click it to open the reader. That's it. Your preferences (theme, font size, scroll speed) are saved automatically.
+
+The reader runs entirely in your browser. No data is sent anywhere. No account required.
+
+OPEN SOURCE
+LeadSheet is free and open source. Contributions and feedback welcome!
+
+If you find it useful, consider supporting development:
+https://ko-fi.com/andrewmendelsohn

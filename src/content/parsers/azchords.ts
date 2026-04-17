@@ -9,7 +9,9 @@ import {
 /**
  * AZChords parser.
  *
- * Content lives in <pre id="content"> as plain text with no chord-span markup.
+ * Content lives in <pre id="text-content"> (or legacy <pre id="content">) as
+ * plain text. Newer pages may wrap chord names in <span class="ch"> — the
+ * parser uses textContent which flattens these to plain text either way.
  * The site hosts submissions in two different formats, often for the same
  * song, so we handle both in a single parser:
  *
@@ -36,7 +38,7 @@ export const azChordsParser: SiteParser = {
     return /^\/[a-z0-9]\/[^/]+\/[^/]+\.html?$/i.test(url.pathname);
   },
   hasChordContent() {
-    const pre = document.querySelector('pre#content');
+    const pre = document.querySelector('pre#text-content') || document.querySelector('pre#content');
     if (!pre) return false;
     const text = pre.textContent || '';
     // Inline-paren format: "(F)" / "(Am)" / "(C/G)" etc.
@@ -52,7 +54,7 @@ export const azChordsParser: SiteParser = {
 };
 
 function parseAZChords(): ParsedSong | null {
-  const preEl = document.querySelector('pre#content');
+  const preEl = document.querySelector('pre#text-content') || document.querySelector('pre#content');
   if (!preEl) return null;
 
   const rawText = preEl.textContent || '';

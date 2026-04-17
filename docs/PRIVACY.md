@@ -11,7 +11,7 @@ This browser extension is designed to be private by default. It reads chord shee
 The extension stores a small set of user preferences locally on your device via `chrome.storage.local`:
 
 - Font size
-- Theme (light / dark)
+- Color theme
 - Default transpose behavior
 - Auto-scroll speed
 
@@ -57,4 +57,6 @@ If the policy changes, the "Last updated" date above will change and the revised
 
 ## Contact
 
-Contact: <OWNER EMAIL — TBD>
+Andrew Mendelsohn
+Mendelsohn Labs LLC
+andrew@mendelsohnlabs.com

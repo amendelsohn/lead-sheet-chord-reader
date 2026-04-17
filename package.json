@@ -2,6 +2,7 @@
   "name": "lead-sheet-chord-reader",
   "version": "1.0.0",
   "description": "Clean chord reader for Ultimate Guitar and E-Chords",
+  "author": "Andrew Mendelsohn <andrew@mendelsohnlabs.com> (https://ko-fi.com/andrewmendelsohn)",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +11,7 @@
     "build:all": "npm run build && npm run build:firefox",
     "dev": "node build.mjs --watch",
     "dev:firefox": "node build.mjs --watch --target=firefox",
-    "android:run": "web-ext run -t firefox-android --firefox-apk=org.mozilla.fenix --source-dir=./dist-firefox",
+    "android:run": "web-ext run -t firefox-android --firefox-apk=org.mozilla.fenix --adb-device=$(adb devices | awk 'NR==2{print $1}') --source-dir=./dist-firefox",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/**/*.test.ts",
     "clean": "rm -rf dist dist-firefox"

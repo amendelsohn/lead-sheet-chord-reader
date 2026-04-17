@@ -103,7 +103,9 @@ function parseContent(preEl: Element): SongLine[] {
   for (const el of Array.from(clone.querySelectorAll('*'))) {
     const tag = el.tagName;
     if (tag !== 'B' && tag !== 'SPAN' && tag !== 'I' && tag !== 'EM') {
-      el.remove();
+      // Unwrap: replace element with its children so we don't lose
+      // content inside wrapper <div>s that Cifra Club now injects.
+      el.replaceWith(...el.childNodes);
     }
   }
 
